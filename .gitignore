@@ -1,0 +1,6 @@
+/f1tenth_simulator
+
+build
+
+*.tmp
+*.bak

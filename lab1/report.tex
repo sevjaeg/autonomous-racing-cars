@@ -1,0 +1,221 @@
+\documentclass[letta4 paper]{article}
+% Set target color model to RGB
+\usepackage[inner=2.0cm,outer=2.0cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage[rgb]{xcolor}
+\usepackage{verbatim}
+\usepackage{subcaption}
+\usepackage[justification=centering]{caption}
+\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,tikz,amssymb,tkz-linknodes}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, urlcolor=blue,  linkcolor=blue, citecolor=blue]{hyperref}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{rotating}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fancyhdr}
+\usepackage[shortlabels]{enumitem}
+\usepackage{gensymb}
+\usepackage{footmisc}
+\usepackage{siunitx}
+\usepackage{bm}
+\usepackage[style=ieee,backend=biber,maxnames=99,doi=false,isbn=false,citestyle=numeric-comp,]{biblatex}
+
+\bibliography{./bibliography.bib}
+\lstset{
+%	language=bash,
+	basicstyle=\ttfamily,
+    breaklines=true,
+    postbreak=\mbox{$\hookrightarrow$\space},
+}
+\usetikzlibrary{arrows}
+\usetikzlibrary{shapes}
+\tikzstyle{int}=[draw, fill=blue!20, minimum size=2em]
+\tikzstyle{init}=[pin edge={to-,thin,black}]
+
+\newcommand{\lvanumber}{191.119}
+\newcommand{\lvasemester}{2022S}
+\newcommand{\lvainfo}{(VU 4,0)}
+\newcommand{\lvaname}{Autonomous Racing Cars}
+\newcommand{\labnr}{1}
+\newcommand{\labname}{Race Car \& Simulator}
+
+\newcommand{\labstartdate}{2022-03-03}
+\newcommand{\labenddate}{2022-03-15}
+
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{section}
+\graphicspath{ {./img/} }
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\lvaname~\lvasemester}
+\rhead{\labname}
+\cfoot{Page \thepage}
+
+\newcommand{\homework}[2]{
+   \newpage
+   \setcounter{page}{1}
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{\vspace{2mm}
+        \begin{minipage}{0.3\textwidth}
+        \includegraphics[width=\textwidth]{TU_logo.png}
+        \end{minipage}
+        ~
+        \begin{minipage}{0.65\textwidth}
+        \centering
+        \normalsize \bf \lvaname \\ \lvanumber~\lvainfo~Semester: \lvasemester \\
+        \vspace{2mm}
+        \Large {#1}\\
+        \vspace{2mm}
+        \normalsize \bf #2
+        \end{minipage}
+      \vspace{2mm}}
+   }
+   \end{center}
+   \vspace*{4mm}
+}
+
+\newcommand{\simpletodo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
+\newcommand{\problem}[3]{~\\\fbox{\textbf{Problem #1: #2}}\hfill (#3 points)\newline}
+\newcommand{\subproblem}[1]{~\newline\textbf{(#1)}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Hy}{\mathcal{H}}
+\newcommand{\VS}{\textrm{VS}}
+\newcommand{\solution}{~\newline\textbf{\textit{(Solution)}} }
+
+\newcommand{\bbF}{\mathbb{F}}
+\newcommand{\bbX}{\mathbb{X}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bepsilon}{\boldsymbol{\epsilon}}
+\newcommand{\balpha}{\boldsymbol{\alpha}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\0}{\mathbf{0}}
+
+\usepackage{booktabs}
+
+
+
+\begin{document}
+
+	\homework {\labname}{\labstartdate}
+	\thispagestyle{empty}
+
+	\section*{Student data}
+
+\noindent
+\begin{tabular}{| l | l | l|} 
+ \hline
+ \textbf{Matrikelnummer} & \textbf{Firstname} & \textbf{Lastname} \\
+ \hline
+ 01613004 & Severin & Jäger \\
+ %\hline
+ %\simpletodo{remove or add line(s) if necessary} & & \\
+ \hline
+\end{tabular}
+
+\section{Race Car Hardware}
+	\begin{enumerate}[a.) ]
+      \item The UST-10LX lidar sensor~\cite{lidar} has the following specifications: \begin{itemize}
+         \item Maximum range: Surface-dependant: \SI{10}{m} for white paper,  \SI{4}{m} for a diffuse surface with \SI{10}{\percent} reflectance
+         \item Minimum range: \SI{6}{cm}
+         \item Number of rays: One rotating ray
+         \item Scanning angle: \SI{270}{\degree} FOV, \SI{0.25}{\degree} resolution
+         \item Update rate: \SI{40}{Hz}
+         \item Input voltage: \SIrange{10}{30}{V} DC
+      \end{itemize}
+      \item The NVIDIA Jetson Xavier NX~\cite{jetson} has the following specifications: \begin{itemize}
+         \item Connectivity: $4\times$ USB 3.1, Micro USB, Gigabit Ethernet, HDMI, Display Port, MicroSD, $2\times$ MIPI CSI-2 camera interface, GPIO pins, busses (I2C, I2S, SPI, UART)
+         \item Heterogeneous system consisting of a CPU complex with three dual-core CPUs (Carmel core: ARM-based, superscalar), a GPU with 384 CUDA and 48 Tensor cores, two NVDLA deep learning accelerators and a programmable vision accelerator
+         \item Memory: 8 GB LPDDR4x and 16 GB eMMC flash
+         \item The module requires a \SIrange{9}{20}{V} DC power supply
+      \end{itemize}
+      \item The VESC 6 plus electronic speed controller~\cite{esc-schematics} and its successor VESC 6 MKV~\cite{esc-mkv} have the following specifications: \begin{itemize}
+         \item Interfaces:  CAN, USB, COMM (UART/SPI/I2C/ADC), SWD (JTAG), PPM (for reference input) motor sensor input (e.g, for Hall sensor), BLDC
+         \item Measurement of speed, current and voltage (per phase), motor revolution, ampere and watt hours
+      \end{itemize}
+      \item The Velineon 3500 motor~\cite{motor} has the following specifications: \begin{itemize}
+         \item Brushless DC motor (BLDC)
+         \item The maximum rpm is 50000. However, the motor features a $k_v$ of 3500, this means 3500 rpm per volt applied to the motor without mechanical load. As the battery voltage is nominally \SI{11.1}{V} (see below), this leads to 38850 rpm in our setup. Note that the battery might be charged up to higher voltages.
+         \item As the car contains some gears, the wheel rotation speed calculates to $\omega_{w} = \frac{1}{\rho} \omega_{m}$ with the drive ratio $\rho$ and the motor rotation speed $\omega_{m} = \frac{2\pi}{60} \mathrm{rpm}_{m}$. The car speed then depends on the wheel diameter $D$ as $v_{car} = \frac{D}{2} \omega_{w} = \frac{D}{2} \frac{1}{\rho} \frac{2\pi}{60} \mathrm{rpm}_{m}$. The Fiesta~\cite{fiesta} has a $\rho$ of $19.69$ and a $D$ of \SI{0.102}{m}, thus $v_{car} = \num{2.7124E-4} \mathrm{rpm}_{m}$. For the Slash~\cite{slash} car, $D=0.1095$, $\rho=11.82$, and $v_{car} = \num{4.851E-4} \mathrm{rpm}_{m}$ hold. The Slash seems to be more aggressive and thus ships with a motor with significantly higher $k_v$. The main physical parameters (i.e. the size) is roughly identical.
+      \end{itemize}
+      \item The SparkFun OpenLog Artemis IMU module~\cite{imu} has the following specifications: \begin{itemize}
+         \item Connectivity: USB C, I2C, UART, SWD (JTAG), MicroSD, four ADC channels
+         \item The module is based on the Apollo3 Blue MCU~\cite{imu-mcu} which provides a temperature sensor, a 14-bit ADC with 1.2MS/s, and a comparator
+         \item The measurement  capabilities are in the ICM-20948 MotionTracking IC~\cite{imu-sensor} which hosts a 3-axis gyroscope, a 3-axis accelerometer, and a 3-axis magnetic field sensor on a single chip.
+      \end{itemize}
+      \item The power distribution board hosts a PDQ30-Q24-S12-D DC/DC converter IC~\cite{dcdc} with the following specifications: \begin{itemize}
+         \item The provided output voltage is \SI{12}{V} with an accuracy of $\pm \SI{1.5}{\percent}$. The current is limited to \SI{3.9}{A}.
+         \item The input voltage is supposed to be between \SI{9}{V} and \SI{36}{V}. Below \SI{8.5}{V}, the under-voltage shutdown becomes active.
+      \end{itemize}
+      \item The battery is a 3-cell LiPo type with a 25C rating and \SI{5000}{mAh}~\cite{battery}. It has the following specifications: \begin{itemize}
+         \item A nominal voltage of \SI{11.1}{V}.
+         \item The battery itself does not provide any cut-off, however LiPo batteries should not be discharged below \SI{3.2}{V} per cell~\cite{battery-guide}. For a three-cell battery, this makes \SI{9.6}{V}.
+      \end{itemize}
+   \end{enumerate}
+
+	\section{Car Simulaton Model}
+	\begin{enumerate}[a.) ]
+      \item The f1tenth simulator~\cite{f1tenth-sim} implements both the kinematic single track and the single track model from~\cite{models}. The single track model is far more advanced as it not only considers kinematic but also dynamic aspects. In the simulator ROS node, only the single track model is used in the \texttt{update\_pose} function. Nonetheless, the single-track update function internally uses the kinematic single track model if the velocities are below \SI{0.5}{m/s} as the single track model becomes singular für small velocities.
+      \item The single-track model implementation in the f1tenth simulator has the following parameters with their corresponding default values: \begin{itemize}
+         \item Wheelbase: \SI{0.3302}{m}
+         \item Friction coefficient \num{0.523}
+         \item Height of centre of gravity \SI{0.074}{m}
+         \item Distance from centre of gravity to front axle \SI{0.15875}{m}
+         \item Distance from centre of gravity to rear axle \SI{0.17145}{m}
+         \item Cornering stiffness coefficient of front wheels \SI{4.718}{rad^{-1}}
+         \item Cornering stiffness coefficient of rear wheels \SI{5.4562}{rad^{-1}}
+         \item Vehicle mass \SI{3.47}{kg}
+         \item Moment of inertia around z axis from centre of gravity \SI{0.04712}{kg \cdot m^2}
+      \end{itemize}
+      Note that Althoff and Würsching also mention the vehicle width, which is however not used in their equations. As this model only considers a single track, it does not play any role.
+      \item Already answered above.
+      \item The parameters can be determined as follows \begin{itemize}
+         \item Wheelbase: Given in the chassis datasheet, otherwise the distance between the tire centres can be measured
+         \item Friction coefficient: Tables of friction between certain material combinations are available
+         \item Height of centre of gravity: Hard to measure, but can probably be estimated 
+         \item Distance from centre of gravity to front axle: Find the longitudinal centre of gravity by balancing the car on some thin object. Then, measure the distance.
+         \item Distance from centre of gravity to rear axle: As above.
+         \item Cornering stiffness coefficient of front wheels: Some tire models and estimation techniques from the literature might help, but this is hard to model. Maybe it can be learnt.
+         \item Cornering stiffness coefficient of rear wheels: As above
+         \item Vehicle mass: Use a kitchen balance.
+         \item Moment of inertia around z axis from centre of gravity. Create a simple 2D mass distribution model (e.g. assume uniformly distributed mass for each component with know mass) and apply the parallel axis theorem to compute the inertial moment relative to the centre of gravity.
+      \end{itemize}
+      In general, all mentioned parameters can be identified/learnt from the system. However, this only makes sense if most parameters are already well-known and if reasonable start values are present as the identification has to take place on the physical car.
+      \item The f1tenth model has the following constraints: \begin{itemize}
+         \item $v_{max}$ = \SI{7}{m\cdot s^{-1}}
+         \item $a_{max}$ = \SI{7.51}{m\cdot s^{-2}}
+         \item $a_{brake}$ = \SI{8.26}{m\cdot s^{-2}}
+         \item $\delta_{max}$ = \SI{0.4189}{rad}
+         \item $v_{\delta_{max}}$ = \SI{3.2}{rad s^{-1}}
+      \end{itemize}
+      \item The constraints might be obtained as follows: \begin{itemize}
+         \item $v_{max}$: Find a suitable straight track and go as fast as you can while recording the speed (e.g. with by integrating the acceleration measured by the IMU).
+         \item $a_{max}$: Accelerate from rest with maximal power and record the acceleration with the IMU. Make sure you do not slip.
+         \item $a_{brake}$: Break from a very high velocity to rest and record the acceleration with the IMU. Make sure you do not slip.
+         \item $\delta_{max}$: Steer (at rest) to the very left or right and use a triangle ruler.
+         \item $v_{\delta_{max}}$: Drive circles with the maximum steering angle and with different velocities (without slipping). Record the angular acceleration measured by the IMU, integrate, and take the maximum.
+      \end{itemize}
+   \end{enumerate}
+
+	\section{Simulator: f1tenth\_simulator}
+	
+   Please consider the video uploaded to TUWEL.
+
+	\sloppy
+   \printbibliography
+
+\end{document} 

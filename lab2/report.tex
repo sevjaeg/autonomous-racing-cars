@@ -1,0 +1,154 @@
+\documentclass[letta4 paper]{article}
+% Set target color model to RGB
+\usepackage[inner=2.0cm,outer=2.0cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage[rgb]{xcolor}
+\usepackage{verbatim}
+\usepackage{subcaption}
+\usepackage[justification=centering]{caption}
+\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,tikz,amssymb,tkz-linknodes}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, urlcolor=blue,  linkcolor=blue, citecolor=blue]{hyperref}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{rotating}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{gensymb}
+\usepackage{footmisc}
+\usepackage{bm}
+\usepackage[style=alphabetic-verb,backend=biber,maxnames=99]{biblatex}
+\bibliography{./refs}
+\lstset{
+%	language=bash,
+	basicstyle=\ttfamily,
+    breaklines=true,
+    postbreak=\mbox{$\hookrightarrow$\space},
+}
+\usetikzlibrary{arrows}
+\usetikzlibrary{shapes}
+\tikzstyle{int}=[draw, fill=blue!20, minimum size=2em]
+\tikzstyle{init}=[pin edge={to-,thin,black}]
+
+\newcommand{\lvanumber}{191.119}
+\newcommand{\lvasemester}{2022S}
+\newcommand{\lvainfo}{(VU 4,0)}
+\newcommand{\lvaname}{Autonomous Racing Cars}
+\newcommand{\labnr}{2}
+\newcommand{\labname}{ROS Basics \& Safety Node}
+
+\newcommand{\labstartdate}{2021-03-15}
+\newcommand{\labenddate}{2021-03-29}
+
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{section}
+\graphicspath{ {./img/} }
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\lvaname~\lvasemester}
+\rhead{\labname}
+\cfoot{Page \thepage}
+
+\newcommand{\homework}[2]{
+   \newpage
+   \setcounter{page}{1}
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{\vspace{2mm}
+        \begin{minipage}{0.3\textwidth}
+        \includegraphics[width=\textwidth]{TU_logo.png}
+        \end{minipage}
+        ~
+        \begin{minipage}{0.65\textwidth}
+        \centering
+        \normalsize \bf \lvaname \\ \lvanumber~\lvainfo~Semester: \lvasemester \\
+        \vspace{2mm}
+        \Large {#1}\\
+        \vspace{2mm}
+        \normalsize \bf #2
+        \end{minipage}
+      \vspace{2mm}}
+   }
+   \end{center}
+   \vspace*{4mm}
+}
+
+\newcommand{\simpletodo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
+\newcommand{\problem}[3]{~\\\fbox{\textbf{Problem #1: #2}}\hfill (#3 points)\newline}
+\newcommand{\subproblem}[1]{~\newline\textbf{(#1)}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Hy}{\mathcal{H}}
+\newcommand{\VS}{\textrm{VS}}
+\newcommand{\solution}{~\newline\textbf{\textit{(Solution)}} }
+
+\newcommand{\bbF}{\mathbb{F}}
+\newcommand{\bbX}{\mathbb{X}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bepsilon}{\boldsymbol{\epsilon}}
+\newcommand{\balpha}{\boldsymbol{\alpha}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\0}{\mathbf{0}}
+
+\usepackage{booktabs}
+
+
+
+\begin{document}
+
+	\homework {\labname}{\labstartdate}
+	\thispagestyle{empty}
+
+	\section*{Student data}
+
+\noindent
+\begin{tabular}{| l | l | l|} 
+ \hline
+ \textbf{Matrikelnummer} & \textbf{Firstname} & \textbf{Lastname} \\
+ \hline
+ \simpletodo{fill in} & \simpletodo{fill in} & \simpletodo{fill in} \\
+ \hline
+ \simpletodo{fill in} & \simpletodo{fill in} & \simpletodo{fill in} \\
+ \hline
+ \simpletodo{fill in} & \simpletodo{fill in} & \simpletodo{fill in} \\
+ \hline
+ \simpletodo{remove or add line(s) if necessary} & & \\
+ \hline
+\end{tabular}
+
+	\section{ROS Basics}
+	
+	\subsection{ROS Workspace and package}
+	\simpletodo{fill in your solution...}
+
+	\subsection{ROS Messages}
+	\simpletodo{fill in your solution...}
+	
+	\subsection{ROS Bags}
+	\simpletodo{fill in your solution...}
+
+	\section{Automatic Emergency Brake (AEB) with Time to Collision (TTC)}
+	
+	\subsection{ROS Node: safety\_node}
+	\simpletodo{fill in your solution...}
+
+	\subsection{Data visualization and parameter adjustments}
+	\simpletodo{fill in your solution...}
+
+	\section{Appendix}
+	\simpletodo{do not forget to add the full sourcecode of any program or script that you implemented...}
+
+\end{document} 
