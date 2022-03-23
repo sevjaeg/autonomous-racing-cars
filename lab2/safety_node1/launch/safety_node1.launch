@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node name="safety_node" pkg="safety_node1" type="node" output="screen" /> 
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
+</launch>

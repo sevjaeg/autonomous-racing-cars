@@ -1,6 +1,9 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/LaserScan.h>
+
+#include <iostream>
+
 // TODO: include ROS msg type headers and libraries
 
 class Safety {
@@ -49,6 +52,15 @@ public:
 int main(int argc, char ** argv) {
     ros::init(argc, argv, "safety_node");
     Safety sn;
-    ros::spin();
+    ROS_INFO("Hello from safety_node!");
+
+    ros::Rate loop_rate(1);
+
+    while (ros::ok())
+    {
+        ROS_INFO("safety_node looping");
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
     return 0;
 }
