@@ -88,7 +88,7 @@ And build it and don't forget to source everything with `source devel/setup.bash
 
 ### Debugging Nodes
 
-Compile node with:
+To be able to debug nodes they need to be built with:
 ```
 catkin_make -DCMAKE_BUILD_TYPE=DEBUG
 ```
