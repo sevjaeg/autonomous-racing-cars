@@ -44,9 +44,10 @@ cd autonomous-racing-cars
 
 ### Simulator Setup
 
-Download f1tenth simulator
+Download f1tenth simulator (here exemplarily to <REPO_PATH>)
 
 ```
+cd <REPO_PATH>
 git clone https://github.com/CPS-TUWien/f1tenth_simulator.git
 ```
 
