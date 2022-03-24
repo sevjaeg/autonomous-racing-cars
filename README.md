@@ -70,6 +70,12 @@ cd ~/catkin_ws
 catkin_make
 ```
 
+Run the setup
+
+```
+. ~/catkin_ws/devel/setup.bash
+```
+
 Start the simulator with (keyboard mode can be enabled by pressing `k`, then `w`, `a`, `s`, and `d` can be used)
 
 ```
