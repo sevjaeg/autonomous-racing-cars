@@ -39,7 +39,6 @@ Clone this repository
 
 ```
 git clone https://github.com/sevjaeg/autonomous-racing-cars.git
-cd autonomous-racing-cars
 ```
 
 ### Simulator Setup
@@ -47,6 +46,7 @@ cd autonomous-racing-cars
 Download f1tenth simulator
 
 ```
+cd autonomous-racing-cars
 git clone https://github.com/CPS-TUWien/f1tenth_simulator.git
 ```
 
@@ -57,10 +57,10 @@ mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/src
 ```
 
-Create symbolic link (<YOUR_PATH> is the parent directory of this repository in your file system)
+Create symbolic link
 
 ```
-ln -s <YOUR_PATH>/autonomous-racing-cars/f1tenth_simulator
+ln -s <REPO_PATH>/autonomous-racing-cars/f1tenth_simulator
 ```
 
 Build the simulator package
@@ -70,8 +70,31 @@ cd ~/catkin_ws
 catkin_make
 ```
 
+Run the setup
+
+```
+. ~/catkin_ws/devel/setup.bash
+```
+
 Start the simulator with (keyboard mode can be enabled by pressing `k`, then `w`, `a`, `s`, and `d` can be used)
 
 ```
 roslaunch f1tenth_simulator simulator.launch
+```
+
+### Adding New Nodes
+
+Create a symbolic link from the repo to your source
+```
+cd ~/catkin_ws/src
+ln -s <REPO_PATH>/autonomous-racing-cars/<PATH_TO_YOUR_NODE>
+```
+And build it and don't forget to source everything with `source devel/setup.bash`.
+
+
+### Debugging Nodes
+
+To be able to debug nodes they need to be built with:
+```
+catkin_make -DCMAKE_BUILD_TYPE=DEBUG
 ```
