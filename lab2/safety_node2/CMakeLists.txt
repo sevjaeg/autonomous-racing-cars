@@ -9,6 +9,7 @@ project(safety_node2)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  #stdmsg
 )
 
 ## System dependencies are found with CMake's conventions
