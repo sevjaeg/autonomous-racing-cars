@@ -39,15 +39,14 @@ Clone this repository
 
 ```
 git clone https://github.com/sevjaeg/autonomous-racing-cars.git
-cd autonomous-racing-cars
 ```
 
 ### Simulator Setup
 
-Download f1tenth simulator (here exemplarily to <REPO_PATH>)
+Download f1tenth simulator
 
 ```
-cd <REPO_PATH>
+cd autonomous-racing-cars
 git clone https://github.com/CPS-TUWien/f1tenth_simulator.git
 ```
 
