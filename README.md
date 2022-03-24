@@ -57,10 +57,10 @@ mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/src
 ```
 
-Create symbolic link (<YOUR_PATH> is the parent directory of this repository in your file system)
+Create symbolic link
 
 ```
-ln -s <YOUR_PATH>/autonomous-racing-cars/f1tenth_simulator
+ln -s <REPO_PATH>/autonomous-racing-cars/f1tenth_simulator
 ```
 
 Build the simulator package
@@ -81,6 +81,6 @@ roslaunch f1tenth_simulator simulator.launch
 Create a symbolic link from the repo to your source
 ```
 cd ~/catkin_ws/src
-ln -s <YOUR_PATH/autonomous-racing-cars/PATH_TO_YOUR_NODE>
+ln -s <REPO_PATH>/autonomous-racing-cars/<PATH_TO_YOUR_NODE>
 ```
 And build it and don't forget to source everything with `source devel/setup.bash`.
