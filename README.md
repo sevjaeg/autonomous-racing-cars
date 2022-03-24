@@ -84,3 +84,11 @@ cd ~/catkin_ws/src
 ln -s <REPO_PATH>/autonomous-racing-cars/<PATH_TO_YOUR_NODE>
 ```
 And build it and don't forget to source everything with `source devel/setup.bash`.
+
+
+### Debugging Nodes
+
+Compile node with:
+```
+catkin_make -DCMAKE_BUILD_TYPE=DEBUG
+```
