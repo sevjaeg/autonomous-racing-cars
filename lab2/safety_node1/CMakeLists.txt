@@ -13,7 +13,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   std_msgs
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -91,10 +93,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/Thresholds.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -152,6 +153,9 @@ add_dependencies(safety_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORT
 target_link_libraries(safety_node
   ${catkin_LIBRARIES}
 )
+
+# make sure configure headers are built before any node using them
+add_dependencies(safety_node ${PROJECT_NAME}_gencfg)
 
 #############
 ## Install ##
