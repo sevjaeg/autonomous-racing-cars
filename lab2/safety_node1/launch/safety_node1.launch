@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
 <launch>
-    <node name="safety_node" pkg="safety_node1" type="node" output="screen" /> 
+    <param name="safety_node/threshold_fw" type="double" value="0.75" />
+    <param name="safety_node/threshold_bw" type="double" value="1.8" />
+
     <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
+    <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" /> 
 </launch>
