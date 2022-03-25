@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 import rospy
 import math
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
@@ -14,7 +15,7 @@ class Safety(object):
     # With TRESHOLD = 0.5 the Emergency Breaking works pretty well expect in reverse
     # TRESHOLD = 0.5
     # With TRESHOLD = 1 it also works in reverse
-    TRESHOLD = 1
+    TRESHOLD = 0.6
 
     def __init__(self):
         self.speed = 0
