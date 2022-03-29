@@ -12,10 +12,9 @@ class Safety(object):
     """
     The class that handles emergency braking.
     """
-    # With TRESHOLD = 0.5 the Emergency Breaking works pretty well expect in reverse
-    # TRESHOLD = 0.5
-    # With TRESHOLD = 1 it also works in reverse
-    TRESHOLD = 0.6
+
+    FORWARD_THRESHOLD = 0.75
+    BACKWARD_THRESHOLD = 1.8
 
     def __init__(self):
         self.speed = 0
@@ -34,7 +33,7 @@ class Safety(object):
             boolean = Bool()
             boolean.data = False
             self.bool.publish(boolean)
-            
+
     def scan_callback(self, scan_msg):
         angle = scan_msg.angle_min
         i = 0
@@ -48,10 +47,9 @@ class Safety(object):
             i = i + 1
             angle = angle + scan_msg.angle_increment
 
-            # Starting Treshold calculated as velocity/acceleration
-            if TTC < self.TRESHOLD:
-                rospy.loginfo("TTC under the treshold. TTC: " + str(TTC) + ", Treshold: " + str(self.TRESHOLD) + ".")
-                rospy.loginfo("Activating emergincy brake")
+            if (self.speed > 0 and TTC < self.FORWARD_THRESHOLD) or (self.speed <= 0 and TTC < self.BACKWARD_THRESHOLD):
+                rospy.loginfo("TTC:" + str(TTC) + " under the threshold.")
+                rospy.loginfo("Activating emergency brake")
 
                 # AckermannDriveStamped message
                 ack_drive = AckermannDrive()
@@ -80,4 +78,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
