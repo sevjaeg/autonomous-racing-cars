@@ -10,13 +10,14 @@
 
 // Task 2.2.a
 #include <std_msgs/Float64.h>
+#include <std_msgs/Int32.h>
 
 // Task 2.2.b
 #include <dynamic_reconfigure/server.h>
 #include <safety_node1/ThresholdsConfig.h>
 
-double threshold_fw = 0.75;
-double threshold_bw = 1.8;
+double threshold_fw = 0.6;
+double threshold_bw = 1.5;
 
 // Task 2.2.b
 void reconfig_callback(safety_node1::ThresholdsConfig &config, uint32_t level) {
@@ -42,6 +43,7 @@ private:
     ros::Publisher pub_velocity_;
     ros::Publisher pub_ttc_;
     ros::Publisher pub_min_distance_;
+    ros::Publisher pub_brake_int_;
 
 public:
     Safety() {
@@ -77,6 +79,7 @@ public:
         pub_velocity_ = n.advertise<std_msgs::Float64>("velocity", 10);
         pub_ttc_ = n.advertise<std_msgs::Float64>("ttc", 10);
         pub_min_distance_ = n.advertise<std_msgs::Float64>("min_distance", 10);
+        pub_brake_int_ = n.advertise<std_msgs::Int32>("brake_int", 10);
     }
 
     void odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
@@ -127,6 +130,9 @@ public:
         
         // Publish drive/brake message
         std_msgs::Bool brake_bool_msg;
+
+        // Task 2.2.a
+        std_msgs::Int32 brake_int_msg;
         if (min < threshold && min > 0) {
             ROS_DEBUG("threshold warning with ttc=%f", min);
 
@@ -135,10 +141,19 @@ public:
             pub_brake_.publish(brake_msg);
             
             brake_bool_msg.data = true;
+
+            // Task 2.2.a
+            brake_int_msg.data = 1;
         } else {
             brake_bool_msg.data = false;
+
+            // Task 2.2.a
+            brake_int_msg.data = 0;
         }
         pub_brake_bool_.publish(brake_bool_msg);
+
+        // Task 2.2.a
+        pub_brake_int_.publish(brake_int_msg);
     }
 };
 

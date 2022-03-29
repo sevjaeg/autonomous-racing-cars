@@ -13,8 +13,8 @@ class Safety(object):
     The class that handles emergency braking.
     """
 
-    FORWARD_THRESHOLD = 0.75
-    BACKWARD_THRESHOLD = 1.8
+    FORWARD_THRESHOLD = 0.6
+    BACKWARD_THRESHOLD = 1.5
 
     def __init__(self):
         self.speed = 0
