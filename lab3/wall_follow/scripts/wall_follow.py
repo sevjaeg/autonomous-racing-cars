@@ -6,13 +6,14 @@ import numpy as np
 
 #ROS Imports
 import rospy
+import tf
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
 #PID CONTROL PARAMS
-kp = #TODO
-kd = #TODO
-ki = #TODO
+kp = 14.0 #TODO fine-tuning
+kd = 0.09 #TODO fine-tuning
+ki = 0.0 #TODO fine-tuning
 servo_offset = 0.0
 prev_error = 0.0 
 error = 0.0
@@ -33,16 +34,36 @@ class WallFollow:
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
 
-        self.lidar_sub = #TODO: Subscribe to LIDAR
-        self.drive_pub = #TODO: Publish to drive
+        self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback)
+        self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=10)
+        listener = tf.TransformListener()
+        
 
     def getRange(self, data, angle):
         # data: single message from topic /scan
         # angle: between -45 to 225 degrees, where 0 degrees is directly to the right
         # Outputs length in meters to object with angle in lidar scan field of view
-        #make sure to take care of nans etc.
+        # make sure to take care of nans etc.
         #TODO: implement
-        return 0.0
+        input_angle = angle - 90
+        angle_rad = math.radians(input_angle)
+        number_of_beams = len(data.ranges)
+        array_increment = angle_rad / data.angle_incement
+        
+        array_index = (number_of_beams / 2 + array_increment if number_of_beams / 2 + array_increment <= number_of_beams else number_of_beams)
+        
+        result = data.ranges[array_index]
+        
+        #http://wiki.ros.org/tf/Tutorials/Writing%20a%20tf%20listener%20%28Python%29
+        #The tranformation from the lidar to, idk. possibly base_link, needs to be implemented properly
+        try:
+            (trans, rot) = listener.lookupTransform('/base_link',data.header.frame_id,rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+  28        continue
+        
+        if (result > 0.0 and result < 5.0):
+            return result
+        
 
     def pid_control(self, error, velocity):
         global integral
