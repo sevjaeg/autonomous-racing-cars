@@ -2,5 +2,5 @@
 
 <launch> 
     <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
-    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen" />
+    <node name="slow_crash" pkg="slow_crash" type="slow_crash.py" output="screen" />
 </launch>
