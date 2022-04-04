@@ -8,14 +8,17 @@ import numpy as np
 import rospy
 import tf
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image, LaserScan
-from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
+from sensor_msgs.msg import LaserScan
+from ackermann_msgs.msg import AckermannDriveStamped
+
+from dynamic_reconfigure.server import Server
+from wall_follow.cfg import GainsConfig
 
 #PID CONTROL PARAMS
 #TODO fine-tuning
 kp = math.radians(14)  
 kd = math.radians(0.09)
-ki = math.radians(0.0)
+ki = math.radians(0.3)
 
 servo_offset = 0.0
 prev_error = 0.0 
@@ -34,6 +37,16 @@ CAR_LENGTH = 0.50  # Traxxas Rally is 20 inches or 0.5 meters
 # TODO optimise
 THETA = 32  # degrees
 LOOKAHEAD_TIME = 1.5  # seconds
+
+def reconfig_callback(config, level):
+    global kp
+    global ki
+    global kd
+    kp = config.kp
+    ki = config.ki
+    kd = config.kd
+    rospy.loginfo("Gains set to kp={kp}, ki={ki}, kd={kd}".format(**config))
+    return config
 
 class WallFollow:
     """ Implement Wall Following on the car
@@ -85,7 +98,7 @@ class WallFollow:
         # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         #     # TODO continue
         
-        if (result > 0.0 and result < 10.0):
+        if (result and result > 0.0 and result < 10.0):
             return result
         else:
             rospy.loginfo("Invalid data: " + str(result))
@@ -106,7 +119,9 @@ class WallFollow:
         if prev_time > 0.0:
             delta_t = time - prev_time
             delta_err = error - prev_error
-            integral += delta_t * error
+            # rospy.loginfo("Invalid data: " + str(result))
+            if abs(velocity) > 0.1:  # TODO useless
+                integral += delta_t * error
             # TODO anti windup (if I control is used)
         else:  # ignore first time update
             delta_t = 1  # avoid division by 0
@@ -186,6 +201,8 @@ class WallFollow:
 def main(args):
     rospy.init_node("WallFollow_node", anonymous=True)
     wf = WallFollow()
+
+    srv = Server(GainsConfig, reconfig_callback)
     rospy.sleep(0.1)
     rospy.spin()
 
