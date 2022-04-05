@@ -18,11 +18,11 @@ class Safety(object):
 
     def __init__(self):
         self.speed = 0
-        self.acker = rospy.Publisher('brake', AckermannDriveStamped, queue_size=10)
-        self.bool = rospy.Publisher('brake_bool', Bool, queue_size=10)
+        self.acker = rospy.Publisher('/brake', AckermannDriveStamped, queue_size=10)
+        self.bool = rospy.Publisher('/brake_bool', Bool, queue_size=10)
 
-        rospy.Subscriber("scan", LaserScan, self.scan_callback)
-        rospy.Subscriber("odom", Odometry, self.odom_callback)
+        rospy.Subscriber("/scan", LaserScan, self.scan_callback)
+        rospy.Subscriber("/odom", Odometry, self.odom_callback)
 
     def odom_callback(self, odom_msg):
         self.speed = odom_msg.twist.twist.linear.x
