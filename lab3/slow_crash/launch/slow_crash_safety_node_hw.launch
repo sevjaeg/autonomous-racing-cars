@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch> 
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
+    <remap from="/odom" to="/vesc/odom"/>
+    <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
+    <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+    <remap from="/joy" to="/vesc/joy"/>
+    <node name="safety_node" pkg="safety_node2" type="safety_node.py" output="screen" />
+    <node name="slow_crash" pkg="slow_crash" type="slow_crash.py" output="screen" />
+</launch>
