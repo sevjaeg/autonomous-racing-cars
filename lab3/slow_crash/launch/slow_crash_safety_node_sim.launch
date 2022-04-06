@@ -2,6 +2,6 @@
 
 <launch> 
     <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
-    <node name="safety_node" pkg="safety_node2" type="safety_node.py" output="screen" />
+     <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
     <node name="slow_crash" pkg="slow_crash" type="slow_crash.py" output="screen" />
 </launch>

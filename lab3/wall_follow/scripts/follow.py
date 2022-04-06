@@ -20,6 +20,18 @@ kp = math.radians(14)
 kd = math.radians(0.09)
 ki = math.radians(0.3)
 
+#WALL FOLLOW PARAMS
+# TODO optimise
+theta = 32  # degrees
+desired_distance_left = 0.9  # meters
+lookahead_time = 1.5  # seconds
+
+#WALL FOLLOW PARAMS (unused)
+ANGLE_RANGE = 270  # Hokuyo 10LX has 270 degrees scan
+DESIRED_DISTANCE_RIGHT = 0.9  # meters
+VELOCITY = 2.00  # meters per second
+CAR_LENGTH = 0.50  # Traxxas Rally is 20 inches or 0.5 meters
+
 servo_offset = 0.0
 prev_error = 0.0 
 error = 0.0
@@ -27,25 +39,23 @@ integral = 0.0
 prev_time = 0.0
 velocity = 0.0
 
-#WALL FOLLOW PARAMS
-ANGLE_RANGE = 270  # Hokuyo 10LX has 270 degrees scan
-DESIRED_DISTANCE_RIGHT = 0.9  # meters
-DESIRED_DISTANCE_LEFT = 0.9  # meters
-VELOCITY = 2.00  # meters per second
-CAR_LENGTH = 0.50  # Traxxas Rally is 20 inches or 0.5 meters
-
-# TODO optimise
-THETA = 32  # degrees
-LOOKAHEAD_TIME = 1.5  # seconds
-
 def reconfig_callback(config, level):
     global kp
     global ki
     global kd
+    global desired_distance_left
+    global theta
+    global lookahead_time
     kp = config.kp
     ki = config.ki
     kd = config.kd
+    desired_distance_left = config.dist
+    theta = config.theta
+    lookahead_time = config.t_lookahead
     rospy.loginfo("Gains set to kp={kp}, ki={ki}, kd={kd}".format(**config))
+    rospy.loginfo("Wall distance set to {dist} m".format(**config))
+    rospy.loginfo("Theta set to {theta} degrees".format(**config))
+    rospy.loginfo("Lookahead time set to {t_lookahead} s".format(**config))
     return config
 
 class WallFollow:
@@ -101,7 +111,7 @@ class WallFollow:
         if (result and result > 0.0 and result < 10.0):
             return result
         else:
-            rospy.loginfo("Invalid data: " + str(result))
+            # rospy.loginfo("Invalid data: " + str(result))
             return 10.0  # TODO find suitable default
         
 
@@ -168,12 +178,12 @@ class WallFollow:
 
         #Follow left wall as per the algorithm 
         dist_left = self.getRange(data, 180)
-        dist_theta = self.getRange(data, 180-THETA)
+        dist_theta = self.getRange(data, 180-theta)
 
-        alpha = math.atan2((dist_theta*math.sin(math.radians(THETA))), (dist_theta*math.cos(math.radians(THETA))-dist_left)) - math.pi/2
+        alpha = math.atan2((dist_theta*math.sin(math.radians(theta))), (dist_theta*math.cos(math.radians(theta))-dist_left)) - math.pi/2
 
         dist_wall = dist_left*math.cos(alpha)
-        dist_wall_lookahead = dist_wall + LOOKAHEAD_TIME * velocity * math.sin(-alpha)
+        dist_wall_lookahead = dist_wall + lookahead_time * velocity * math.sin(-alpha)
         error = dist_wall_lookahead - leftDist
 
         # debugging messages
@@ -194,7 +204,7 @@ class WallFollow:
     def lidar_callback(self, data):
         """ 
         """
-        error = self.followLeft(data, DESIRED_DISTANCE_LEFT)    
+        error = self.followLeft(data, desired_distance_left)    
         self.pid_control(error)
         
 
