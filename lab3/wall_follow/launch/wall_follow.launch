@@ -2,8 +2,8 @@
 
 <launch>
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
-        <!-- test for rectangular course, f1_aut_wide is default -->
-        <arg name="map" value="$(find f1tenth_simulator)/maps/test.yaml"/>
+        <!-- rect_in / rect_out / f1_aut_wide (default) -->
+        <arg name="map" value="$(find f1tenth_simulator)/maps/rect_out.yaml"/>
     </include>
     <node name="wall_follow" pkg="wall_follow" type="follow.py" output="screen" />
 </launch>
