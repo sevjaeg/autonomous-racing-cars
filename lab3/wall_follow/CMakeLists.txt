@@ -10,6 +10,7 @@ project(wall_follow)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -87,10 +88,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/Gains.cfg
-# )
-
+generate_dynamic_reconfigure_options(
+  cfg/Gains.cfg
+)
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -158,7 +158,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/wall_follow.py
+  scripts/follow.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
