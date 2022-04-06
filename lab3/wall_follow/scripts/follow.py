@@ -26,6 +26,9 @@ theta = 32  # degrees
 desired_distance_left = 0.9  # meters
 lookahead_time = 1.5  # seconds
 
+# Dynamic params
+dynamic_distance = True
+
 #WALL FOLLOW PARAMS (unused)
 ANGLE_RANGE = 270  # Hokuyo 10LX has 270 degrees scan
 DESIRED_DISTANCE_RIGHT = 0.9  # meters
@@ -52,6 +55,7 @@ def reconfig_callback(config, level):
     desired_distance_left = config.dist
     theta = config.theta
     lookahead_time = config.t_lookahead
+    dynamic_distance = config.dynamic_dist
     rospy.loginfo("Gains set to kp={kp}, ki={ki}, kd={kd}".format(**config))
     rospy.loginfo("Wall distance set to {dist} m".format(**config))
     rospy.loginfo("Theta set to {theta} degrees".format(**config))
@@ -179,11 +183,16 @@ class WallFollow:
         #Follow left wall as per the algorithm 
         dist_left = self.getRange(data, 180)
         dist_theta = self.getRange(data, 180-theta)
+        
+        max_dist = self.getRange(data, 0) + self.getRange(data, 180)
+        
 
         alpha = math.atan2((dist_theta*math.sin(math.radians(theta))), (dist_theta*math.cos(math.radians(theta))-dist_left)) - math.pi/2
 
         dist_wall = dist_left*math.cos(alpha)
         dist_wall_lookahead = dist_wall + lookahead_time * velocity * math.sin(-alpha)
+        if dynamic_distance:
+            leftDist = max_dist / 2
         error = dist_wall_lookahead - leftDist
 
         # debugging messages
