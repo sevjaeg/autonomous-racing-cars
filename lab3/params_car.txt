@@ -1,0 +1,13 @@
+gen.add("kp", double_t, 0, "Proportional gain",  default=0.4,    min=0, max=10)
+gen.add("ki", double_t, 0, "Integral gain",      default=math.radians(0.09),  min=0, max=10)
+gen.add("kd", double_t, 0, "Derivative gain",    default=0,                   min=0, max=10)
+gen.add("dynamic_dist", bool_t, 0, "Dynamic distance calculation", default=False)
+gen.add("dist", double_t, 0, "Distance to left wall [m]", default=0.25, min=0, max=10)
+gen.add("theta", double_t, 0, "Lidar angle theta [degrees]", default=30, min=0, max=70)
+gen.add("t_lookahead", double_t, 0, "Lookahead time [s]", default=1, min=0, max=10)
+
+launch file (use racecar teleop)
+
+python 2
+
+slower speed (0.5 m/s)
