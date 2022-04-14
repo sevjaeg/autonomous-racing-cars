@@ -3,7 +3,7 @@
 <launch>
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
         <!-- rect_in / rect_out / f1_aut_wide (default) -->
-        <arg name="map" value="$(find f1tenth_simulator)/maps/rect_out.yaml"/>
+        <arg name="map" value="$(find f1tenth_simulator)/maps/f1_aut_wide.yaml"/>
     </include>
-    <node name="wall_follow" pkg="wall_follow" type="follow.py" output="screen" />
+    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen" />
 </launch>

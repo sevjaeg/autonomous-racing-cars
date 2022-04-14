@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import print_function
+from re import T
 import sys
 import math
-import numpy as np
 
 #ROS Imports
 import rospy
@@ -12,28 +12,41 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 
 from dynamic_reconfigure.server import Server
-from wall_follow.cfg import GainsConfig
+
+# WARNING: THIS IS ANNOYING
+# Unfortunately the dynamic reconfiguration imports do not work with the given
+# file names as the package and the file have the same name. This causes a 
+# naming conflict. Thus, there are two configurations
+# 
+# A. Set the flag to true and name this file follow.py (also change CMake and
+#    launch files). This allows dynamic reconfiguration
+# B. Name this file wall_follow.py and disable the flag. Then, the code can be
+#    uploaded to the server provieded on TUWEL
+# 
+# Unfortunately you might have to rerun catkin_make and delete the files in 
+# ~/catkin_ws/devel/lib/python3/dist-packages/wall_follow and ~/catkin_ws/
+# ~/catkin_ws/src/wall_follow/scripts/wall_follow
+USE_DYNAMIC_RECONFIG = False
+
+if USE_DYNAMIC_RECONFIG:
+    from wall_follow.cfg import GainsConfig
 
 #PID CONTROL PARAMS
-#TODO fine-tuning
-kp = math.radians(14)  
-kd = math.radians(0.09)
-ki = math.radians(0.3)
+kp = 0.3
+kd = 0.005
+ki = 0.0
 
 #WALL FOLLOW PARAMS
-# TODO optimise
-theta = 32  # degrees
-desired_distance_left = 0.9  # meters
-lookahead_time = 1.5  # seconds
+# TODO tune more conservatively for blackbox test
+theta = 45  # degrees
+desired_distance_left = 1.5  # meters
+lookahead_dist = 1.75  # meters
 
 # Dynamic params
-dynamic_distance = True
+dynamic_distance = False
 
-#WALL FOLLOW PARAMS (unused)
-ANGLE_RANGE = 270  # Hokuyo 10LX has 270 degrees scan
-DESIRED_DISTANCE_RIGHT = 0.9  # meters
-VELOCITY = 2.00  # meters per second
-CAR_LENGTH = 0.50  # Traxxas Rally is 20 inches or 0.5 meters
+# Car params
+MAX_STEERING_ANGLE = math.radians(24)
 
 servo_offset = 0.0
 prev_error = 0.0 
@@ -41,6 +54,7 @@ error = 0.0
 integral = 0.0
 prev_time = 0.0
 velocity = 0.0
+ttc = 0.0
 
 def reconfig_callback(config, level):
     global kp
@@ -48,18 +62,19 @@ def reconfig_callback(config, level):
     global kd
     global desired_distance_left
     global theta
-    global lookahead_time
+    global lookahead_dist
+    global dynamic_distance
     kp = config.kp
     ki = config.ki
     kd = config.kd
     desired_distance_left = config.dist
     theta = config.theta
-    lookahead_time = config.t_lookahead
+    lookahead_dist = config.d_lookahead
     dynamic_distance = config.dynamic_dist
     rospy.loginfo("Gains set to kp={kp}, ki={ki}, kd={kd}".format(**config))
     rospy.loginfo("Wall distance set to {dist} m".format(**config))
     rospy.loginfo("Theta set to {theta} degrees".format(**config))
-    rospy.loginfo("Lookahead time set to {t_lookahead} s".format(**config))
+    rospy.loginfo("Lookahead distance set to {d_lookahead} m".format(**config))
     return config
 
 class WallFollow:
@@ -85,7 +100,7 @@ class WallFollow:
         self.dist_lookahead_pub = rospy.Publisher(dist_lookahead_topic, Float64, queue_size=10)
         self.integral_pub = rospy.Publisher(integral_topic, Float64, queue_size=10)
 
-        listener = tf.TransformListener()
+        # listener = tf.TransformListener()
         
 
     def getRange(self, data, angle):
@@ -117,8 +132,8 @@ class WallFollow:
         else:
             # rospy.loginfo("Invalid data: " + str(result))
             return 10.0  # TODO find suitable default
-        
 
+    
     def pid_control(self, error):
         global integral
         global prev_error
@@ -134,29 +149,38 @@ class WallFollow:
             delta_t = time - prev_time
             delta_err = error - prev_error
             # rospy.loginfo("Invalid data: " + str(result))
-            if abs(velocity) > 0.1:  # TODO useless
-                integral += delta_t * error
-            # TODO anti windup (if I control is used)
+            integral += delta_t * error
         else:  # ignore first time update
             delta_t = 1  # avoid division by 0
             delta_err = 0
 
         angle = kp * error + kd * delta_err/delta_t + ki * integral
 
-        # Probably handled by VESC anyway, but improves plot readiblity
-        if(angle > math.radians(24)):
-            angle = math.radians(24)
-        elif (angle < -math.radians(24)):
-            angle = -math.radians(24)
+        # Angle clipping. Probably handled by VESC anyway, but improves plot readiblity
+        if(angle > MAX_STEERING_ANGLE):
+            angle = MAX_STEERING_ANGLE
+        elif (angle < -MAX_STEERING_ANGLE):
+            angle = -MAX_STEERING_ANGLE
 
-        if(angle > math.radians(20)):
-            velocity = 0.5
-        elif (angle > math.radians(10)):
-            velocity = 1
+        if False:
+            if(angle > math.radians(20)):
+                velocity = 0.5
+            elif (angle > math.radians(10)):
+                velocity = 1
+            else:
+                velocity = 1.5
         else:
-            velocity = 1.5
+            # TODO 
+            velocity = 4 - 0.09 *  abs(math.degrees(kp) * error)
+            # 4 - 0.09
+            # 5 - 0.15  (d_lookahead = 1.75)
+            # 6 - 0.19  (d_lookahead = 2.0 ) wobbly
+            # 7 - 0.23  not working
 
-        # TODO fancier velocity heuristic (e.g. considering both angle and distance to obstacle ahead)
+            if velocity < 0.7:
+                velocity = 0.7
+
+        # TODO fancier velocity heuristic (e.g. considering both angle and distance to obstacle ahead or TTC)
 
         prev_error = error
         prev_time = time
@@ -179,20 +203,24 @@ class WallFollow:
 
     def followLeft(self, data, leftDist):
         global velocity
+        global prev_error
 
         #Follow left wall as per the algorithm 
         dist_left = self.getRange(data, 180)
         dist_theta = self.getRange(data, 180-theta)
+
+        # TODO error handling (invalid distances)
         
         max_dist = self.getRange(data, 0) + self.getRange(data, 180)
         
-
         alpha = math.atan2((dist_theta*math.sin(math.radians(theta))), (dist_theta*math.cos(math.radians(theta))-dist_left)) - math.pi/2
 
         dist_wall = dist_left*math.cos(alpha)
-        dist_wall_lookahead = dist_wall + lookahead_time * velocity * math.sin(-alpha)
+        dist_wall_lookahead = dist_wall + lookahead_dist  * math.sin(-alpha)
+
         if dynamic_distance:
             leftDist = max_dist / 2
+
         error = dist_wall_lookahead - leftDist
 
         # debugging messages
@@ -221,7 +249,8 @@ def main(args):
     rospy.init_node("WallFollow_node", anonymous=True)
     wf = WallFollow()
 
-    srv = Server(GainsConfig, reconfig_callback)
+    if USE_DYNAMIC_RECONFIG:
+        srv = Server(GainsConfig, reconfig_callback)
     rospy.sleep(0.1)
     rospy.spin()
 

@@ -6,4 +6,6 @@ build
 *.tmp
 *.bak
 
+*.pyc
+
 lab1/driving_simulator.mp4
