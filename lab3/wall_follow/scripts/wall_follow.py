@@ -25,7 +25,8 @@ from dynamic_reconfigure.server import Server
 # 
 # Unfortunately you might have to rerun catkin_make and delete the files in 
 # ~/catkin_ws/devel/lib/python3/dist-packages/wall_follow and ~/catkin_ws/
-# ~/catkin_ws/src/wall_follow/scripts/wall_follow
+# ~/catkin_ws/src/wall_follow/scripts/wall_follow when changing between the
+# two configurations.
 USE_DYNAMIC_RECONFIG = False
 
 if USE_DYNAMIC_RECONFIG:
@@ -37,16 +38,19 @@ kd = 0.005
 ki = 0.0
 
 #WALL FOLLOW PARAMS
-# TODO tune more conservatively for blackbox test
-theta = 45  # degrees
-desired_distance_left = 1.5  # meters
-lookahead_dist = 1.75  # meters
+theta = 36  # degrees
+desired_distance_left = 1.5 # meters
+lookahead_dist = 2  # meters
 
 # Dynamic params
-dynamic_distance = False
+dynamic_distance = True
 
 # Car params
 MAX_STEERING_ANGLE = math.radians(24)
+MAX_SPEED = 4  # m/s
+MIN_SPEED = 1  # m/s
+# 1.4 for levine map
+MAX_WALL_DISTANCE = 2  # m 
 
 servo_offset = 0.0
 prev_error = 0.0 
@@ -131,7 +135,7 @@ class WallFollow:
             return result
         else:
             # rospy.loginfo("Invalid data: " + str(result))
-            return 10.0  # TODO find suitable default
+            return 10.0  # TODO introduce error handling
 
     
     def pid_control(self, error):
@@ -170,17 +174,10 @@ class WallFollow:
             else:
                 velocity = 1.5
         else:
-            # TODO 
-            velocity = 4 - 0.09 *  abs(math.degrees(kp) * error)
-            # 4 - 0.09
-            # 5 - 0.15  (d_lookahead = 1.75)
-            # 6 - 0.19  (d_lookahead = 2.0 ) wobbly
-            # 7 - 0.23  not working
-
-            if velocity < 0.7:
-                velocity = 0.7
-
-        # TODO fancier velocity heuristic (e.g. considering both angle and distance to obstacle ahead or TTC)
+            # TODO fancier velocity heuristic (e.g. considering both angle and distance to obstacle ahead or TTC)
+            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)/math.degrees(MAX_STEERING_ANGLE) *  abs(math.degrees(kp) * error)
+            if velocity < MIN_SPEED:
+                velocity = MIN_SPEED
 
         prev_error = error
         prev_time = time
@@ -197,9 +194,9 @@ class WallFollow:
         error_msg.data = error
         self.error_pub.publish(error_msg)
 
-        integral_msg = Float64()
-        integral_msg.data = integral
-        self.integral_pub.publish(integral_msg)
+        # integral_msg = Float64()
+        # integral_msg.data = integral
+        # self.integral_pub.publish(integral_msg)
 
     def followLeft(self, data, leftDist):
         global velocity
@@ -219,10 +216,13 @@ class WallFollow:
         dist_wall_lookahead = dist_wall + lookahead_dist  * math.sin(-alpha)
 
         if dynamic_distance:
-            leftDist = max_dist / 2
+            if max_dist < 2 * MAX_WALL_DISTANCE:
+                leftDist = max_dist/2
+            else:
+                leftDist = MAX_WALL_DISTANCE
 
         error = dist_wall_lookahead - leftDist
-
+       
         # debugging messages
         alpha_msg = Float64()
         alpha_msg.data = alpha
