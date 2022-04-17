@@ -3,6 +3,7 @@ from __future__ import print_function
 from re import T
 import sys
 import math
+from turtle import speed
 
 #ROS Imports
 import rospy
@@ -33,24 +34,23 @@ if USE_DYNAMIC_RECONFIG:
     from wall_follow.cfg import GainsConfig
 
 #PID CONTROL PARAMS
-kp = 0.3
-kd = 0.005
+kp = 0.32
+kd = 0.0015
 ki = 0.0
 
 #WALL FOLLOW PARAMS
-theta = 36  # degrees
-desired_distance_left = 1.5 # meters
-lookahead_dist = 2  # meters
+theta = 42 # degrees
+desired_distance_left = 1.5 # meters (only active if no dynamic distance)
 
 # Dynamic params
 dynamic_distance = True
 
 # Car params
 MAX_STEERING_ANGLE = math.radians(24)
-MAX_SPEED = 4  # m/s
-MIN_SPEED = 1  # m/s
+MAX_SPEED = 5.8  # m/s
+MIN_SPEED = 1.7  # m/s
 # 1.4 for levine map
-MAX_WALL_DISTANCE = 2  # m 
+MAX_WALL_DISTANCE = 1.8  # m 
 
 servo_offset = 0.0
 prev_error = 0.0 
@@ -66,14 +66,12 @@ def reconfig_callback(config, level):
     global kd
     global desired_distance_left
     global theta
-    global lookahead_dist
     global dynamic_distance
     kp = config.kp
     ki = config.ki
     kd = config.kd
     desired_distance_left = config.dist
     theta = config.theta
-    lookahead_dist = config.d_lookahead
     dynamic_distance = config.dynamic_dist
     rospy.loginfo("Gains set to kp={kp}, ki={ki}, kd={kd}".format(**config))
     rospy.loginfo("Wall distance set to {dist} m".format(**config))
@@ -213,7 +211,16 @@ class WallFollow:
         alpha = math.atan2((dist_theta*math.sin(math.radians(theta))), (dist_theta*math.cos(math.radians(theta))-dist_left)) - math.pi/2
 
         dist_wall = dist_left*math.cos(alpha)
-        dist_wall_lookahead = dist_wall + lookahead_dist  * math.sin(-alpha)
+
+        # dynamic lookahead distance. No direct proportionality to avoid noise feedback
+        if velocity < 3:
+            ld = 1.5
+        if velocity > 5:
+            ld = 2.5
+        else:
+            ld = 2.0
+
+        dist_wall_lookahead = dist_wall + ld * math.sin(-alpha)
 
         if dynamic_distance:
             if max_dist < 2 * MAX_WALL_DISTANCE:
