@@ -5,6 +5,7 @@
     <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
     <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
     <remap from="/joy" to="/vesc/joy"/>
-     <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
+    <include file="$(find racecar)/launch/teleop.launch"/>
+    <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
     <node name="slow_crash" pkg="slow_crash" type="slow_crash.py" output="screen" />
 </launch>

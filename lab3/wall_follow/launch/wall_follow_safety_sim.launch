@@ -5,6 +5,6 @@
         <!-- test for rectangular course, f1_aut_wide is default -->
         <arg name="map" value="$(find f1tenth_simulator)/maps/f1_aut_wide.yaml"/>
     </include>
-    <node name="wall_follow" pkg="wall_follow" type="follow.py" output="screen" />
+    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen" />
     <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
 </launch>

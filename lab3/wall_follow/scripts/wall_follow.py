@@ -39,12 +39,12 @@ ki = 0
 
 # WALL FOLLOW PARAMS
 THETA = 42 # degrees
-DYNAMIC_DISTANCE = False  # drives in the middle of the track
+DYNAMIC_DISTANCE = True  # drives in the middle of the track
 # use 1.2 used for rect map
 DESIRED_DISTANCE_LEFT = 1.5 # meters (only active if no dynamic distance)
 MAX_WALL_DISTANCE = 1.8  # m (only active with dynamic distance, helps with wide curves)
-BASIC_VELOCITY = True  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = 6.25  # m/s  (only without basic velocity)
+BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
+MAX_SPEED = 6.3  # m/s  (only without basic velocity)
 MIN_SPEED = 1.7  # m/s  (only without basic velocity)
 LOOKAHEAD_DIST_FAST = 3.0  # m  (if the car drives more than 5 m/s)
 LOOKAHEAD_DIST_MID = 2.25  # m  (if the car drives more than 3 m/s)

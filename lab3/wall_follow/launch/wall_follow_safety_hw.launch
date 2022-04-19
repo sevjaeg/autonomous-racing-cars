@@ -5,10 +5,7 @@
     <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
     <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
     <remap from="/joy" to="/vesc/joy"/>
-    <include file="$(find f1tenth_simulator)/launch/simulator.launch">
-        <!-- test for rectangular course, f1_aut_wide is default -->
-        <arg name="map" value="$(find f1tenth_simulator)/maps/f1_aut_wide.yaml"/>
-    </include>
-    <node name="wall_follow" pkg="wall_follow" type="follow.py" output="screen" />
+    <include file="$(find racecar)/launch/teleop.launch"/>
+    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen" />
     <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
 </launch>
