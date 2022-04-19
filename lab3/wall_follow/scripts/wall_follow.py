@@ -34,13 +34,13 @@ if USE_DYNAMIC_RECONFIG:
 
 # PID CONTROL PARAMS
 kp = 0.32
-kd = 0 #0.0002
+kd = 0
 ki = 0
 
 # WALL FOLLOW PARAMS
 THETA = 42 # degrees
 DYNAMIC_DISTANCE = True  # drives in the middle of the track
-# use 1.2 used for rect map
+# use 1.2 for rect map
 DESIRED_DISTANCE_LEFT = 1.5 # meters (only active if no dynamic distance)
 MAX_WALL_DISTANCE = 1.8  # m (only active with dynamic distance, helps with wide curves)
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
