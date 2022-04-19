@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 
-<launch> 
-    <include file="$(find f1tenth_simulator)/launch/simulator.launch" />
+<launch>
     <remap from="/odom" to="/vesc/odom"/>
     <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
     <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
