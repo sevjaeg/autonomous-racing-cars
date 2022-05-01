@@ -101,15 +101,49 @@ catkin_make -DCMAKE_BUILD_TYPE=DEBUG
 
 ### Google Cartographer
 
-There is a [Setup Guide](https://google-cartographer-ros.readthedocs.io/en/latest/compilation.html#building-installation) available online. Do not use your standard `catkin_ws` but e.g. `cartographer_ws` to avoid problems with the `catkin_make` command.
+There is a [Setup Guide](https://google-cartographer-ros.readthedocs.io/en/latest/compilation.html#building-installation) available online. Do not use your standard `catkin_ws` but e.g. `cartographer_ws` to avoid problems with the `catkin_make` command. Besides that follow all steps in the tutorial.
 
-Do not forget to
+After compiling, the following steps are required for setup:
+
+```
+cd ~/catkin_ws/src
+ln -s <REPO_PATH>/autonomous-racing-cars/cartographer_config/f110_description/
+cp <REPO_PATH>/autonomous-racing-cars/cartographer_config/f110_2d.lua ~/cartographer_ws/install_isolated/share/cartographer_ros/configuration_files
+cp <REPO_PATH>/autonomous-racing-cars/cartographer_config/f110_2d.launch ~/cartographer_ws/install_isolated/share/cartographer_ros/launch
+```
+
+To run the node, the following command is required
 
 ```
 source ~/cartographer_ws/install_isolated/setup.bash
 ```
 
-or directly add it to your `~/.bashrc` file.
+In a first terminal run the simulator (TODO or the car setup), e.g. with
+
+```
+roslaunch wall_follow slam.launch
+```
+
+Note that RVIZ might show you some errors due to missing `tf` transformations as the SLAM node is not running yet.
+
+To run the cartographer, open a second terminal and run
+
+
+and
+
+```
+roslaunch cartographer_ros f110_2d.launch
+```
+
+Then, the SLAM node should generate a map in the `map_slam` topic. For correct laser scan visualisation you might have to change the fixed frame in rviz to `odom` or `map_slam`.
+
+To save the map, run
+
+```
+rosrun map_server map_saver -f <MAP_NAME> map:=/map_slam
+```
+
+in a third terminal.
 
 #### Compilation Issue Fixes
 
@@ -131,8 +165,18 @@ sudo apt install python-is-python3
 sudo apt-get install ros-noetic-amcl
 ```
 
+```
+roslaunch wall_follow filter.launch
+```
+
 ### Robot Pose EKF
 
 ```
 sudo apt-get install ros-noetic-robot-pose-ekf
 ```
+
+```
+roslaunch wall_follow fusion.launch
+```
+
+This does not work in the simulator (TODO) as no IMU data is published.
