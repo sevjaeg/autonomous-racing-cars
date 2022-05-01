@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 
 <launch>
-    <include file="$(find wall_follow)/launch/wall_follow.launch"/>
+    <include file="$(find wall_follow)/launch/wall_follow.launch">
+        <arg name="max_speed"  value="3.0"/>
+        <arg name="min_speed"  value="1.0"/>
+    </include>
 
     <!-- amcl -->
     <arg name="use_map_topic"  default="true"/>

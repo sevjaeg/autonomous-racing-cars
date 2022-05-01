@@ -33,19 +33,19 @@ if USE_DYNAMIC_RECONFIG:
     from wall_follow.cfg import GainsConfig
 
 # PID CONTROL PARAMS
-kp = 0.32
-kd = 0
-ki = 0
+kp = rospy.get_param('/wall_follow/gain_p', 0.32)
+kd = rospy.get_param('/wall_follow/gain_d', 0.0)
+ki = rospy.get_param('/wall_follow/gain_i', 0.0)
 
 # WALL FOLLOW PARAMS
-THETA = 42 # degrees
-DYNAMIC_DISTANCE = True  # drives in the middle of the track
+THETA = rospy.get_param('/wall_follow/theta_lidar', 42) # degrees
+DYNAMIC_DISTANCE = rospy.get_param('/wall_follow/dynamic_distance', True)  # drives in the middle of the track
 # use 1.2 for rect map
-DESIRED_DISTANCE_LEFT = 1.5 # meters (only active if no dynamic distance)
+DESIRED_DISTANCE_LEFT = rospy.get_param('/wall_follow/desired_distance', 1.5) # meters (only active if no dynamic distance)
 MAX_WALL_DISTANCE = 1.8  # m (only active with dynamic distance, helps with wide curves)
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = 6.3  # m/s  (only without basic velocity)
-MIN_SPEED = 1.7  # m/s  (only without basic velocity)
+MAX_SPEED = rospy.get_param('/wall_follow/max_speed', 6.3)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/wall_follow/min_speed', 1.7)  # m/s  (only without basic velocity)
 LOOKAHEAD_DIST_FAST = 3.0  # m  (if the car drives more than 5 m/s)
 LOOKAHEAD_DIST_MID = 2.25  # m  (if the car drives more than 3 m/s)
 LOOKAHEAD_DIST_SLOW = 1.5  # m  (if the car drives slower than 3 m/s)
