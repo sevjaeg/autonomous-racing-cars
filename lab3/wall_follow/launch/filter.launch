@@ -4,19 +4,20 @@
     <include file="$(find wall_follow)/launch/wall_follow.launch"/>
 
     <!-- amcl -->
-  <arg name="use_map_topic"  default="false"/>
-  <arg name="scan_topic"     default="scan"/>
-  <arg name="initial_pose_x" default="0.0"/>
-  <arg name="initial_pose_y" default="0.0"/>
-  <arg name="initial_pose_a" default="0.0"/>
+    <arg name="use_map_topic"  default="true"/>
+    <arg name="scan_topic"     default="scan"/>
+    <arg name="initial_pose_x" default="0.0"/>
+    <arg name="initial_pose_y" default="0.0"/>
+    <arg name="initial_pose_a" default="0.0"/>
     <node name="amcl" pkg="amcl" type="amcl" output="screen">
         <param name="use_map_topic"             value="$(arg use_map_topic)"/>
         <param name="odom_model_type"           value="diff"/>
         <param name="odom_alpha5"               value="0.1"/>
         <!-- Publish scans from best pose at a max of 4 Hz -->
         <param name="gui_publish_rate"          value="4.0"/>
+        <param name="save_pose_rate "           value="4.0"/>
         <param name="laser_max_beams"           value="60"/>
-        <param name="laser_max_range"           value="12.0"/>
+        <param name="laser_max_range"           value="10.0"/>
         <param name="min_particles"             value="500"/>
         <param name="max_particles"             value="2000"/>
         <param name="kld_err"                   value="0.05"/>
@@ -37,9 +38,9 @@
         <param name="laser_likelihood_max_dist" value="2.0"/>
         <param name="update_min_d"              value="0.25"/>
         <param name="update_min_a"              value="0.2"/>
-        <param name="odom_frame_id"             value="map"/>
+        <param name="odom_frame_id"             value="odom"/>
         <param name="base_frame_id"             value="base_link"/>
-        <param name="global_frame_id"           value="odom"/>
+        <param name="global_frame_id"           value="map"/>
         <param name="resample_interval"         value="1"/>
         <!-- Increase tolerance because the computer can get quite busy -->
         <param name="transform_tolerance"       value="1.0"/>
