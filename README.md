@@ -101,21 +101,37 @@ catkin_make -DCMAKE_BUILD_TYPE=DEBUG
 
 ### Google Cartographer
 
-> TODO
+There is a [Setup Guide](https://google-cartographer-ros.readthedocs.io/en/latest/compilation.html#building-installation) available online. Do not use your standard `catkin_ws` but e.g. `cartographer_ws` to avoid problems with the `catkin_make` command.
 
-[Setup Guide](https://google-cartographer-ros.readthedocs.io/en/latest/compilation.html#building-installation)
+Do not forget to
+
+```
+source ~/cartographer_ws/install_isolated/setup.bash
+```
+
+or directly add it to your `~/.bashrc` file.
+
+#### Compilation Issue Fixes
+
+Jinja2 version 3.2.X might cause problems
+
+```
+pip install jinja2==3.0.0
+```
+
+`python` pointing to `python2` might cause problems
+
+```
+sudo apt install python-is-python3
+```
 
 ### AMCL
-
-> TODO
 
 ```
 sudo apt-get install ros-noetic-amcl
 ```
 
 ### Robot Pose EKF
-
-This package is used to fuse the AMCL output with the IMU data. Install it with
 
 ```
 sudo apt-get install ros-noetic-robot-pose-ekf

@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
+    <arg name="map_frame"  default="map"/>
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
-        <!-- rect / rect_reverse / f1_aut_wide (default)/ f1_aut / f1_mco / f1_gbr / f1_esp -->
+        <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
         <arg name="map" value="$(find f1tenth_simulator)/maps/f1_aut_wide.yaml"/>
+        <arg name="map_frame"  value="$(arg map_frame)"/>
     </include>
 
     <arg name="gain_p"  default="0.32"/>
