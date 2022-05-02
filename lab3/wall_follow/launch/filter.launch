@@ -6,12 +6,13 @@
         <arg name="min_speed"  value="1.0"/>
         <arg name="map_frame" value="odom"/>
         <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
-        <arg name="map"  value="f1_aut_wide"/> 
+        <arg name="map"  value="f1_esp"/> 
     </include>
 
     <!-- amcl -->
     <arg name="use_map_topic"  default="true"/>
     <arg name="scan_topic"     default="scan"/>
+    <arg name="tf_broadcast"   default="true"/>
     <arg name="initial_pose_x" default="0.0"/>
     <arg name="initial_pose_y" default="0.0"/>
     <arg name="initial_pose_a" default="0.0"/>
@@ -19,9 +20,9 @@
         <param name="use_map_topic"             value="$(arg use_map_topic)"/>
         <param name="odom_model_type"           value="diff"/>
         <param name="odom_alpha5"               value="0.1"/>
-        <!-- Publish scans from best pose at a max of 4 Hz -->
-        <param name="gui_publish_rate"          value="4.0"/>
-        <param name="save_pose_rate "           value="4.0"/>
+        <!-- Publish scans from best pose at a max of 40 Hz -->
+        <param name="gui_publish_rate"          value="40.0"/>
+        <param name="save_pose_rate "           value="40.0"/>
         <param name="laser_max_beams"           value="60"/>
         <param name="laser_max_range"           value="10.0"/>
         <param name="min_particles"             value="500"/>
@@ -55,6 +56,7 @@
         <param name="initial_pose_x"            value="$(arg initial_pose_x)"/>
         <param name="initial_pose_y"            value="$(arg initial_pose_y)"/>
         <param name="initial_pose_a"            value="$(arg initial_pose_a)"/>
+        <param name="tf_broadcast"              value="$(arg tf_broadcast)"/>
         <remap from="scan"                      to="$(arg scan_topic)"/>
     </node>
 </launch>

@@ -169,14 +169,12 @@ sudo apt-get install ros-noetic-amcl
 roslaunch wall_follow filter.launch
 ```
 
-### Robot Pose EKF
+### Robot Localisation
 
 ```
-sudo apt-get install ros-noetic-robot-pose-ekf
+sudo apt-get install ros-noetic-robot-localization
 ```
 
 ```
 roslaunch wall_follow fusion.launch
 ```
-
-This does not work in the simulator (TODO) as no IMU data is published.
