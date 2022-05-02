@@ -48,7 +48,7 @@ MAX_SPEED = rospy.get_param('/wall_follow/max_speed', 6.3)  # m/s  (only without
 MIN_SPEED = rospy.get_param('/wall_follow/min_speed', 1.7)  # m/s  (only without basic velocity)
 LOOKAHEAD_DIST_FAST = 3.0  # m  (if the car drives more than 5 m/s)
 LOOKAHEAD_DIST_MID = 2.25  # m  (if the car drives more than 3 m/s)
-LOOKAHEAD_DIST_SLOW = 1.5  # m  (if the car drives slower than 3 m/s)
+LOOKAHEAD_DIST_SLOW = rospy.get_param('/wall_follow/lookahead_dist_slow', 1.5) # m  (if the car drives slower than 3 m/s)
 
 # Car params
 MAX_STEERING_ANGLE = math.radians(24)

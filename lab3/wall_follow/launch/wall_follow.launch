@@ -17,6 +17,7 @@
     <arg name="desired_distance"  default="1.5"/>
     <arg name="max_speed"  default="6.3"/>
     <arg name="min_speed"  default="1.7"/>
+    <arg name="lookahead_dist_slow"  default="1.5"/>
     <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen">
         <param name="gain_p"  value="$(arg gain_p)"/>
         <param name="gain_i"  value="$(arg gain_i)"/>
@@ -26,5 +27,6 @@
         <param name="desired_distance"  value="$(arg desired_distance)"/>
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="lookahead_dist_slow"  value="$(arg lookahead_dist_slow)"/>
     </node>
 </launch>
