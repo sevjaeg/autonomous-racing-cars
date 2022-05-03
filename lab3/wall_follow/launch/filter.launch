@@ -6,7 +6,7 @@
         <arg name="min_speed"  value="1.0"/>
         <arg name="map_frame" value="odom"/>
         <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
-        <arg name="map"  value="f1_esp"/> 
+        <arg name="map"  value="f1_aut_wide"/> 
     </include>
 
     <!-- amcl -->

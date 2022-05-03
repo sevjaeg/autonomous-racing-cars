@@ -30,14 +30,14 @@ options = {
 
 MAP_BUILDER.use_trajectory_builder_2d = true
 MAP_BUILDER.use_trajectory_builder_3d = false
-MAP_BUILDER.num_background_threads = 5.0
+MAP_BUILDER.num_background_threads = 7.0
 TRAJECTORY_BUILDER_2D.use_imu_data = false
-TRAJECTORY_BUILDER_2D.max_range = 25.0
-TRAJECTORY_BUILDER_2D.min_range = 0.5
+TRAJECTORY_BUILDER_2D.max_range = 30.0
+TRAJECTORY_BUILDER_2D.min_range = 0.06
 
 -- might be able to optimize these parameters
 -- see: http://google-cartographer-ros.readthedocs.io/en/latest/tuning.html
-TRAJECTORY_BUILDER_2D.submaps.num_range_data = 100
-POSE_GRAPH.optimize_every_n_nodes = 20
+TRAJECTORY_BUILDER_2D.submaps.num_range_data = 150  -- default 100
+POSE_GRAPH.optimize_every_n_nodes = 5  -- default 20
 
 return options

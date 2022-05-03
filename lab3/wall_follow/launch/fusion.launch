@@ -5,8 +5,6 @@
         <param name="tf_broadcast" value="true"/>
     </include>
 
-   
-
     <!-- robot_localization EKF-->
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_params="true"> 
         <rosparam command="load" file="$(find wall_follow)/param/robot_localization.yaml" />
