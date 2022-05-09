@@ -178,3 +178,20 @@ sudo apt-get install ros-noetic-robot-localization
 ```
 roslaunch wall_follow fusion.launch
 ```
+
+## Using HW data
+
+Recorded runs from INFHS (lab6 with best quality so far)
+
+```
+rosbag play bags/infhs_lap6_left_auto_2022-04-07-13-38-33.bag
+```
+
+SLAM output: `infhs_slam_2`
+
+Running AMCL and sensor fusion including visualisation
+
+```
+cd lab4
+roslaunch filter_fusion_hw.launch
+```
