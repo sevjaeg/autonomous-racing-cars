@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
+    <arg name="map"  default="f1_aut_wide"/> 
+    <arg name="map_frame"  default="map"/>
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch">
+        <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
+        <arg name="map_frame"  value="$(arg map_frame)"/>
+    </include>
+
+    <arg name="max_speed"  default="6.3"/>
+    <arg name="min_speed"  default="1.7"/>
+    <arg name="lookahead_dist_slow"  default="1.5"/>
+    <node name="follow_the_gap" pkg="follow_the_gap" type="follow_the_gap.py" output="screen">
+        <param name="max_speed"  value="$(arg max_speed)"/>
+        <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="lookahead_dist_slow"  value="$(arg lookahead_dist_slow)"/>
+    </node>
+</launch>
