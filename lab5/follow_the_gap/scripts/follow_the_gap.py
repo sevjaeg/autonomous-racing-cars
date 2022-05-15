@@ -33,20 +33,12 @@ DISPARITY = 5
 # Safety distance to maintain from a disparity
 SAFETY_DISTANCE = 2  # 0.4
 # When the distance in front is less than this, the car turns
-MIN_DISTANCE_TO_TURN = 6
-
-# Car params
-MAX_STEERING_ANGLE = math.radians(24)
-
-# Global variables
-prev_time = 0.0
-velocity = 2.0
+MIN_DISTANCE_TO_TURN = math.inf
 
 def reconfig_callback(config, level):
     return config
 
 class FollowTheGap:
-    """ Implement reactive algorithm on the car """
     def __init__(self):
         rospy.loginfo("Hello from disparity_extender node")
 
@@ -83,7 +75,6 @@ class FollowTheGap:
                 else:
                     # Left edge
                     safety_rays = self.calculate_angle(ranges[i])
-                    # print("Rays:" + str(safety_rays))
                     processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
         return processed_ranges
 
@@ -99,12 +90,9 @@ class FollowTheGap:
         farthest = ranges_list.index(max(ranges_list))
         if straight < MIN_DISTANCE_TO_TURN:
             angle = self.get_angle(ranges, farthest)
-            # print("Angle: " + str(angle))
-            # print("Index: " + str(farthest))
-            for i in range(6):
-                print(ranges_list[farthest + i - 3])
         else:
             angle = 0.0
+        velocity = self.calculate_velocity(straight)
         drive_msg = AckermannDriveStamped()
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.header.frame_id = "laser"
@@ -114,6 +102,9 @@ class FollowTheGap:
 
     def get_angle(self, ranges, i):
         return (i / len(ranges)) * 180 - 90
+
+    def calculate_velocity(self, straight_distance):
+        return straight_distance
 
 def main(args):
     rospy.init_node("follow_the_gap_node", anonymous=True)
