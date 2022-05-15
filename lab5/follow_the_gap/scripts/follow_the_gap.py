@@ -3,13 +3,14 @@ from __future__ import print_function
 from re import T
 import sys
 import math
-from turtle import left, speed
+# from turtle import left, speed
 
 #ROS Imports
 import rospy
-from std_msgs.msg import Float64
+# from std_msgs.msg import Float64
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
+from visualization_msgs.msg import MarkerArray, Marker
 
 from dynamic_reconfigure.server import Server
 
@@ -25,11 +26,12 @@ MIN_SPEED = rospy.get_param('/follow_the_gap/min_speed', 1.7)  # m/s  (only with
 LOOKAHEAD_DIST_FAST = 3.0  # m  (if the car drives more than 5 m/s)
 LOOKAHEAD_DIST_MID = 2.25  # m  (if the car drives more than 3 m/s)
 LOOKAHEAD_DIST_SLOW = rospy.get_param('/follow_the_gap/lookahead_dist_slow', 1.5) # m  (if the car drives slower than 3 m/s)
+VISUALIZE_ARRAY = False # TODO: Make it reconfigurable
 
 # The minimum distance that is considered a disparity
-DISPARITY = 3
+DISPARITY = 5
 # Safety distance to maintain from a disparity
-SAFETY_DISTANCE = 1  # 0.4
+SAFETY_DISTANCE = 2  # 0.4
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = 6
 
@@ -51,9 +53,11 @@ class FollowTheGap:
         #Topics & Subs, Pubs
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
+        marker_array_topic = '/visualization_marker_array'
 
         self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback)
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=10)
+        self.marker_array_pub = rospy.Publisher(marker_array_topic, MarkerArray, queue_size=10)
 
     def lidar_callback(self, data):
         filtered_ranges = self.filter_ranges(data)
@@ -79,7 +83,7 @@ class FollowTheGap:
                 else:
                     # Left edge
                     safety_rays = self.calculate_angle(ranges[i])
-                    print("Rays:" + str(safety_rays))
+                    # print("Rays:" + str(safety_rays))
                     processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
         return processed_ranges
 
@@ -95,8 +99,8 @@ class FollowTheGap:
         farthest = ranges_list.index(max(ranges_list))
         if straight < MIN_DISTANCE_TO_TURN:
             angle = self.get_angle(ranges, farthest)
-            print("Angle: " + str(angle))
-            print("Index: " + str(farthest))
+            # print("Angle: " + str(angle))
+            # print("Index: " + str(farthest))
             for i in range(6):
                 print(ranges_list[farthest + i - 3])
         else:
