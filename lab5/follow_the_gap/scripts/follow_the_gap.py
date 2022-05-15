@@ -19,26 +19,12 @@ if USE_DYNAMIC_RECONFIG:
     from follow_the_gap.cfg import GainsConfig
 
 # DISPARITY EXTENDER PARAMS
-BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = rospy.get_param('/follow_the_gap/max_speed', 6.3)  # m/s  (only without basic velocity)
-MIN_SPEED = rospy.get_param('/follow_the_gap/min_speed', 1.7)  # m/s  (only without basic velocity)
-LOOKAHEAD_DIST_FAST = 3.0  # m  (if the car drives more than 5 m/s)
-LOOKAHEAD_DIST_MID = 2.25  # m  (if the car drives more than 3 m/s)
-LOOKAHEAD_DIST_SLOW = rospy.get_param('/follow_the_gap/lookahead_dist_slow', 1.5) # m  (if the car drives slower than 3 m/s)
-
 # The minimum distance that is considered a disparity
 DISPARITY = 1
 # Safety distance to maintain from a disparity
 SAFETY_DISTANCE = 0.5
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = math.inf
-
-# Car params
-MAX_STEERING_ANGLE = math.radians(24)
-
-# Global variables
-prev_time = 0.0
-velocity = 0.0
 
 def reconfig_callback(config, level):
     return config
