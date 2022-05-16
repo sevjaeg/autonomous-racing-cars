@@ -11,7 +11,7 @@
 
     <arg name="max_speed"  default="6.3"/>
     <arg name="min_speed"  default="1.7"/>
-    <node name="follow_the_gap" pkg="follow_the_gap" type="follow_the_gap.py" output="screen">
+    <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
     </node>

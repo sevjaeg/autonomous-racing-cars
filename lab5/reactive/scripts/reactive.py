@@ -4,7 +4,6 @@ from platform import java_ver
 from re import T
 import sys
 import math
-# from turtle import left, speed
 
 #ROS Imports
 import rospy
@@ -30,12 +29,9 @@ RAYS_PER_DEGREE = 4
 viz_arr = None
 lidar_data = None
 
-def reconfig_callback(config, level):
-    return config
-
-class FollowTheGap:
+class DisparityExtender:
     def __init__(self):
-        rospy.loginfo("Hello from the follow_the_gap node")
+        rospy.loginfo("Hello from the reactive node")
 
         #Topics & Subs, Pubs
         lidarscan_topic = '/scan'
@@ -149,8 +145,8 @@ class FollowTheGap:
         
 
 def main(args):
-    rospy.init_node("follow_the_gap_node", anonymous=True)
-    ftg = FollowTheGap()
+    rospy.init_node("reactive_node", anonymous=True)
+    dex = DisparityExtender()
 
     rospy.sleep(0.1)
     rospy.spin()
