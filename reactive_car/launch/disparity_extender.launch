@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- rect / rect_reverse / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
+    <arg name="map"  default="f1_aut_wide_obstacles"/>
+
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch">
+        <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
+        <arg name="map_frame"  value="map"/>
+    </include>
+    
+    <arg name="disparity"  default="0.15"/>
+    <arg name="safety_distance"  default="0.52"/>
+    <arg name="max_speed"  default="0.2"/>
+    <arg name="min_speed"  default="0.2"/>
+    <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
+        <param name="max_speed"  value="$(arg max_speed)"/>
+        <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="disparity"  value="$(arg disparity)"/>
+        <param name="safety_distance"  value="$(arg safety_distance)"/>
+    </node>
+</launch>

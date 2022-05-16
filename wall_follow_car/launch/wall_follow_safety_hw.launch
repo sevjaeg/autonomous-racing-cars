@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<launch>
+    <remap from="/odom" to="/vesc/odom"/>
+    <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
+    <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+    <remap from="/joy" to="/vesc/joy"/>
+    <include file="$(find racecar)/launch/teleop.launch"/>
+
+
+    <arg name="gain_p"  default="0.25"/>
+    <arg name="gain_i"  default="0.0"/>
+    <arg name="gain_d"  default="0.0"/>
+    <arg name="theta_lidar"  default="40"/>
+    <arg name="dynamic_distance"  default="false"/>
+    <arg name="desired_distance"  default="0.75"/>
+    <arg name="max_speed"  default="4"/>
+    <arg name="min_speed"  default="1.8"/>
+    <arg name="lookahead_dist_slow"  default="1.5"/>
+    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen">
+        <param name="gain_p"  value="$(arg gain_p)"/>
+        <param name="gain_i"  value="$(arg gain_i)"/>
+        <param name="gain_d"  value="$(arg gain_d)"/>
+        <param name="theta_lidar"  value="$(arg theta_lidar)"/>
+        <param name="dynamic_distance"  value="$(arg dynamic_distance)"/>
+        <param name="desired_distance"  value="$(arg desired_distance)"/>
+        <param name="max_speed"  value="$(arg max_speed)"/>
+        <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="lookahead_dist_slow"  value="$(arg lookahead_dist_slow)"/>
+    </node>
+    <!--node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" /-->
+</launch>
