@@ -16,5 +16,7 @@
     <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="disparity"  value="$(arg disparity)"/>
+        <param name="safety_distance"  value="$(arg safety_distance)"/>
     </node>
 </launch>
