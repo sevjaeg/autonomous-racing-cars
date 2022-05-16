@@ -181,13 +181,13 @@ roslaunch wall_follow fusion.launch
 
 ## Using HW data
 
-Recorded runs from INFHS (lab6 with best quality so far)
+Recorded runs from INFHS (lap6 with best quality so far)
 
 ```
 rosbag play bags/infhs_lap6_left_auto_2022-04-07-13-38-33.bag
 ```
 
-SLAM output: `infhs_slam_2`
+SLAM output: `infhs_slam_2` (best map based on lap6)
 
 Running AMCL and sensor fusion including visualisation
 

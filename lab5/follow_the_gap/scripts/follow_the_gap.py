@@ -11,13 +11,6 @@ from std_msgs.msg import Float64
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 
-from dynamic_reconfigure.server import Server
-
-USE_DYNAMIC_RECONFIG = False
-
-if USE_DYNAMIC_RECONFIG:
-    from follow_the_gap.cfg import GainsConfig
-
 # DISPARITY EXTENDER PARAMS
 # The minimum distance that is considered a disparity
 DISPARITY = 1
@@ -25,6 +18,9 @@ DISPARITY = 1
 SAFETY_DISTANCE = 0.3
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = math.inf
+
+# CONSTANTS
+RAYS_PER_DEGREE = 4
 
 def reconfig_callback(config, level):
     return config
@@ -73,9 +69,8 @@ class FollowTheGap:
 
     def calculate_angle(self, distance):
         # Calculated as 1080/270
-        RAYS_IN_1_ANGLE = 4
         angle = math.degrees(math.atan(SAFETY_DISTANCE / distance))
-        return angle * RAYS_IN_1_ANGLE
+        return angle * RAYS_PER_DEGREE
 
     def navigate_farthest(self, ranges):
         ranges_list = list(ranges)
@@ -103,8 +98,6 @@ def main(args):
     rospy.init_node("follow_the_gap_node", anonymous=True)
     ftg = FollowTheGap()
 
-    if USE_DYNAMIC_RECONFIG:
-        srv = Server(GainsConfig, reconfig_callback)
     rospy.sleep(0.1)
     rospy.spin()
 
