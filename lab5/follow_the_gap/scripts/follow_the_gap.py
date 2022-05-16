@@ -20,7 +20,7 @@ if USE_DYNAMIC_RECONFIG:
 
 # DISPARITY EXTENDER PARAMS
 # The minimum distance that is considered a disparity
-DISPARITY = 2
+DISPARITY = 1
 # Safety distance to maintain from a disparity
 SAFETY_DISTANCE = 0.5
 # When the distance in front is less than this, the car turns
@@ -54,7 +54,8 @@ class FollowTheGap:
 
     def process_disparities(self, ranges):
         processed_ranges = list(ranges)
-        for i in range(len(ranges) - 1):
+        i = 0
+        while i < (len(ranges) - 1):
             if abs(ranges[i] - ranges[i + 1]) >= DISPARITY:
                 # Disparity
                 if ranges[i] > ranges[i + 1]:
@@ -65,6 +66,9 @@ class FollowTheGap:
                     # Left edge
                     safety_rays = self.calculate_angle(ranges[i])
                     processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
+                    # Skip the edited values
+                    i += int(safety_rays - 1)
+            i += 1
         return processed_ranges
 
     def calculate_angle(self, distance):
@@ -93,7 +97,7 @@ class FollowTheGap:
         return (i / len(ranges)) * 180 - 90
 
     def calculate_velocity(self, straight_distance):
-        return straight_distance
+        return straight_distance * 0.5
 
 def main(args):
     rospy.init_node("follow_the_gap_node", anonymous=True)

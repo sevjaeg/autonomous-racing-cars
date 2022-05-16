@@ -2,7 +2,7 @@
 
 <launch>
     <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
-    <arg name="map"  default="f1_aut_wide"/> 
+    <arg name="map"  default="f1_aut_wide_obstacles"/>
     <arg name="map_frame"  default="map"/>
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
         <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
