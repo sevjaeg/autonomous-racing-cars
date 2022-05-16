@@ -14,17 +14,18 @@ from visualization_msgs.msg import MarkerArray, Marker
 
 # DISPARITY EXTENDER PARAMS
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = rospy.get_param('/reactive/max_speed', 6.3)  # m/s  (only without basic velocity)
-MIN_SPEED = rospy.get_param('/reactive/min_speed', 1.7)  # m/s  (only without basic velocity)
+MAX_SPEED = rospy.get_param('/reactive/max_speed', 1)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/reactive/min_speed', 1)  # m/s  (only without basic velocity)
 # The minimum distance that is considered a disparity
-DISPARITY = rospy.get_param('/reactive/disparity', 1)  # m
+DISPARITY = rospy.get_param('/reactive/disparity', 0.15)  # m
 # Safety distance to maintain from a disparity
-SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.3)  # m
+SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.52)  # m
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = math.inf
 
 # CONSTANTS
 RAYS_PER_DEGREE = 4
+MAX_STEERING_ANGLE = 24  # degrees
 
 viz_arr = None
 lidar_data = None
@@ -65,6 +66,7 @@ class DisparityExtender:
         return filtered
 
     def process_disparities(self, ranges):
+        print("")
         global viz_arr
         processed_ranges = list(ranges)
         i = 0
@@ -73,17 +75,29 @@ class DisparityExtender:
                 # Disparity
                 if ranges[i] > ranges[i + 1]:
                     # Right edge
-                    safety_rays = self.calculate_angle(ranges[i + 1])
-                    processed_ranges[int(i - safety_rays): (i + 1)] = [ranges[i + 1]] * int(safety_rays)
-                    viz_arr[int(i - safety_rays): (i + 1)] = [0] * int(safety_rays)
+                    safety_rays = int(self.calculate_angle(ranges[i + 1])+0.5)
+
+                    # processed_ranges[int(i - safety_rays): (i + 1)] = [ranges[i + 1]] * int(safety_rays)
+                    for j in range(i - safety_rays, i+1):
+                        if j < 0 or j >= len(processed_ranges):
+                            continue
+                        processed_ranges[j] = min(ranges[i+1], ranges[j])
+
+                    viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
                 else:
                     # Left edge
-                    safety_rays = self.calculate_angle(ranges[i])
-                    processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
-                    viz_arr[i: int(i + safety_rays + 1)] = [0] * int(safety_rays)
+                    safety_rays = int(self.calculate_angle(ranges[i])+0.5)
+
+                    # processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
+                    for j in range(i, i + safety_rays + 1):
+                        if j < 0 or j >= len(processed_ranges):
+                            continue
+                        processed_ranges[j] = min(ranges[i], ranges[j])
+
+                    viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
                     
                     # Skip the edited values
-                    i += int(safety_rays - 1)
+                    i += safety_rays - 1
             i += 1
                     
         return processed_ranges
@@ -102,7 +116,25 @@ class DisparityExtender:
         else:
             angle = 0.0
         # velocity = self.calculate_velocity(straight)
-        velocity = 2
+        velocity = 1.2
+
+        # Angle clipping. Probably handled by VESC anyway, but improves plot readablity
+        if(angle > MAX_STEERING_ANGLE):
+            angle = MAX_STEERING_ANGLE
+        elif (angle < -MAX_STEERING_ANGLE):
+            angle = -MAX_STEERING_ANGLE
+
+        if BASIC_VELOCITY:
+            if (abs(angle) > 10):
+                velocity = 0.8
+            else:
+                velocity = 1.2
+        else:
+            # TODO find something smarter
+            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)/MAX_STEERING_ANGLE * angle
+            if velocity < MIN_SPEED:
+                velocity = MIN_SPEED
+
         drive_msg = AckermannDriveStamped()
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.header.frame_id = "laser"
