@@ -22,7 +22,7 @@ if USE_DYNAMIC_RECONFIG:
 # The minimum distance that is considered a disparity
 DISPARITY = 1
 # Safety distance to maintain from a disparity
-SAFETY_DISTANCE = 0.5
+SAFETY_DISTANCE = 0.3
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = math.inf
 
