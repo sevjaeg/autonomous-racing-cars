@@ -17,9 +17,9 @@ BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, othe
 MAX_SPEED = rospy.get_param('/follow_the_gap/max_speed', 6.3)  # m/s  (only without basic velocity)
 MIN_SPEED = rospy.get_param('/follow_the_gap/min_speed', 1.7)  # m/s  (only without basic velocity)
 # The minimum distance that is considered a disparity
-DISPARITY = 1
+DISPARITY = rospy.get_param('/follow_the_gap/disparity', 1)  # m
 # Safety distance to maintain from a disparity
-SAFETY_DISTANCE = 0.3
+SAFETY_DISTANCE = rospy.get_param('/follow_the_gap/safety_distance', 0.3)  # m
 # When the distance in front is less than this, the car turns
 MIN_DISTANCE_TO_TURN = math.inf
 
