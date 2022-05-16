@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
+    <arg name="map"  default="f1_aut_wide"/> 
+    <arg name="map_frame"  default="map"/>
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch">
+        <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
+        <arg name="map_frame"  value="$(arg map_frame)"/>
+    </include>
+
+    <arg name="gain_p"  default="0.32"/>
+    <arg name="gain_i"  default="0.0"/>
+    <arg name="gain_d"  default="0.0"/>
+    <arg name="theta_lidar"  default="42"/>
+    <arg name="dynamic_distance"  default="true"/>
+    <arg name="desired_distance"  default="0.15"/>
+    <arg name="max_speed"  default="0.0"/>
+    <arg name="min_speed"  default="0.0"/>
+    <arg name="lookahead_dist_slow"  default="1.1"/>
+    <node name="wall_follow" pkg="wall_follow" type="wall_follow.py" output="screen">
+        <param name="gain_p"  value="$(arg gain_p)"/>
+        <param name="gain_i"  value="$(arg gain_i)"/>
+        <param name="gain_d"  value="$(arg gain_d)"/>
+        <param name="theta_lidar"  value="$(arg theta_lidar)"/>
+        <param name="dynamic_distance"  value="$(arg dynamic_distance)"/>
+        <param name="desired_distance"  value="$(arg desired_distance)"/>
+        <param name="max_speed"  value="$(arg max_speed)"/>
+        <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="lookahead_dist_slow"  value="$(arg lookahead_dist_slow)"/>
+    </node>
+</launch>

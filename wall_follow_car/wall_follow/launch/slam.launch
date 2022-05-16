@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+    <include file="$(find wall_follow)/launch/wall_follow.launch">
+        <arg name="max_speed"  value="1.5"/>
+        <arg name="min_speed"  value="0.5"/>
+        <arg name="map_frame" value="odom"/>
+        <!-- rect / rect_reverse / f1_aut_wide / f1_aut / f1_mco / f1_gbr / f1_esp -->
+        <arg name="map"  value="f1_aut_wide"/> 
+    </include>
+    <node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" />
+</launch>
