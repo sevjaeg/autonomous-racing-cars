@@ -13,7 +13,7 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import MarkerArray, Marker
 
 # DISPARITY EXTENDER PARAMS
-VISUALIZATION = False  # quite costly in performance, this leads to problems in the test bench
+VISUALIZATION = rospy.get_param('/reactive/visualization', False)  # quite costly in performance, this leads to problems in the test bench
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
 MAX_SPEED = rospy.get_param('/reactive/max_speed', 1)  # m/s  (only without basic velocity)
 MIN_SPEED = rospy.get_param('/reactive/min_speed', 1)  # m/s  (only without basic velocity)
@@ -87,8 +87,8 @@ class DisparityExtender:
                             continue
                         processed_ranges[j] = min(ranges[i+1], ranges[j])
 
-                    if VISUALIZATION:
-                        viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
+                        if VISUALIZATION:
+                            viz_arr[j] = 0.0
                 else:
                     # Left edge
                     safety_rays = int(self.calculate_angle(ranges[i])+0.5)
@@ -97,8 +97,8 @@ class DisparityExtender:
                             continue
                         processed_ranges[j] = min(ranges[i], ranges[j])
                     
-                    if VISUALIZATION:
-                        viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
+                        if VISUALIZATION:
+                            viz_arr[j] = 0.0
                     
                     # Skip the edited values
                     i += safety_rays - 1

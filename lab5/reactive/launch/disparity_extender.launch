@@ -9,6 +9,7 @@
         <arg name="map_frame"  value="map"/>
     </include>
     
+    <arg name="visualization" default="false"/>
     <arg name="disparity"  default="0.15"/>
     <arg name="safety_distance"  default="0.52"/>
     <arg name="max_speed"  default="1"/>
@@ -17,12 +18,13 @@
     <arg name="steering_gain"  default="0.8"/>
     <arg name="lidar_range"  default="140"/>
     <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
+        <param name="visualization" value="$(arg visualization)"/>
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
         <param name="velocity_gain"  value="$(arg velocity_gain)"/>
         <param name="steering_gain"  value="$(arg steering_gain)"/>
         <param name="disparity"  value="$(arg disparity)"/>
         <param name="safety_distance"  value="$(arg safety_distance)"/>
-         <param name="lidar_range"  value="$(arg lidar_range)"/>
+        <param name="lidar_range"  value="$(arg lidar_range)"/>
     </node>
 </launch>
