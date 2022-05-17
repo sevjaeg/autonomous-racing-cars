@@ -42,15 +42,11 @@ class DisparityExtender:
         #Topics & Subs, Pubs
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
-        lidar_viz_topic0 = '/lidar_viz0'
-        lidar_viz_topic1 = '/lidar_viz1'
-        lidar_viz_topic2 = '/lidar_viz2'
+        lidar_viz_topic = '/lidar_viz'
 
         self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback)
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=10)
-        self.lidar_viz0_pub = rospy.Publisher(lidar_viz_topic0, LaserScan, queue_size=10)
-        self.lidar_viz1_pub = rospy.Publisher(lidar_viz_topic1, LaserScan, queue_size=10)
-        self.lidar_viz2_pub = rospy.Publisher(lidar_viz_topic2, LaserScan, queue_size=10)
+        self.lidar_viz_pub = rospy.Publisher(lidar_viz_topic, LaserScan, queue_size=10)
 
     def lidar_callback(self, data):
         global viz_arr
@@ -159,24 +155,22 @@ class DisparityExtender:
         while i < len(viz_arr):
             if viz_arr[i] == 0:
                 break
-            viz_arr[i] = 1
+            viz_arr[i] = 10
             i += 1
         i = farthest
         while i > 0:
             if viz_arr[i] == 0:
                 break
-            viz_arr[i] = 1
+            viz_arr[i] = 10
             i -= 1
         i = 0
         while i < len(viz_arr):
-            if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
-                viz_arr[i] = 0.5
+            if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 10.0):
+                viz_arr[i] = 7
             i += 1
         pub = lidar_data
         pub.intensities = viz_arr
-        self.lidar_viz0_pub.publish(pub)
-        self.lidar_viz1_pub.publish(pub)
-        self.lidar_viz2_pub.publish(pub)
+        self.lidar_viz_pub.publish(pub)
         
 
 def main(args):
