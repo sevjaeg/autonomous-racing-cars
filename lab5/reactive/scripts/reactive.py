@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import print_function
+from curses import raw
 from platform import java_ver
 from re import T
 import sys
@@ -10,10 +11,11 @@ import rospy
 # from std_msgs.msg import Float64
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
-from visualization_msgs.msg import MarkerArray, Marker
+# from visualization_msgs.msg import MarkerArray, Marker
+from geometry_msgs.msg import PoseStamped
 
 # DISPARITY EXTENDER PARAMS
-VISUALIZATION = False  # quite costly in performance, this leads to problems in the test bench
+VISUALIZATION = rospy.get_param('/reactive/visualization', False)  # quite costly in performance, this leads to problems in the test bench
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
 MAX_SPEED = rospy.get_param('/reactive/max_speed', 3)  # m/s  (only without basic velocity)
 MIN_SPEED = rospy.get_param('/reactive/min_speed', 1.2)  # m/s  (only without basic velocity)
@@ -35,6 +37,7 @@ RAYS_PER_DEGREE = 4
 MAX_STEERING_ANGLE = 24  # degrees
 
 viz_arr = None
+viz_ranges = None
 lidar_data = None
 
 class DisparityExtender:
@@ -44,20 +47,26 @@ class DisparityExtender:
         #Topics & Subs, Pubs
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
-        lidar_viz_topic0 = '/lidar_viz0'
-        lidar_viz_topic1 = '/lidar_viz1'
-        lidar_viz_topic2 = '/lidar_viz2'
+        lidar_viz_topic = '/lidar_viz'
+        drive_viz_topic = '/drive_viz'
+
+        self.blocked = 0
+        self.possible = 11
+        self.chosen = 6
 
         self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback)
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=10)
-        self.lidar_viz0_pub = rospy.Publisher(lidar_viz_topic0, LaserScan, queue_size=10)
-        self.lidar_viz1_pub = rospy.Publisher(lidar_viz_topic1, LaserScan, queue_size=10)
-        self.lidar_viz2_pub = rospy.Publisher(lidar_viz_topic2, LaserScan, queue_size=10)
+        self.lidar_viz_pub = rospy.Publisher(lidar_viz_topic, LaserScan, queue_size=10)
+        self.lidar_drive_viz_pub = rospy.Publisher(drive_viz_topic, PoseStamped, queue_size=10)
+        self.skipped = 0
+        self.scan = None
 
     def lidar_callback(self, data):
         global viz_arr
         if VISUALIZATION:
             viz_arr = list(data.intensities)
+            self.scan = data
+            data.ranges = self.set_ranges()
         filtered_ranges = self.filter_ranges(data)
         processed_ranges = self.process_disparities(filtered_ranges)
         self.navigate_farthest(processed_ranges)
@@ -66,12 +75,12 @@ class DisparityExtender:
     def filter_ranges(self, data):
         global viz_arr, lidar_data
         lidar_data = data
-        lasers = len(data.ranges) * LIDAR_RANGE / 270
-        skipped = (len(data.ranges) - lasers) / 2
-        filtered = data.ranges[int(skipped): int(skipped + lasers)]
+        lasers = int(len(data.ranges) * LIDAR_ANGULAR_RANGE / 270)
+        self.skipped = int((len(data.ranges) - lasers) / 2)
+        filtered = data.ranges[self.skipped: self.skipped + lasers]
         if VISUALIZATION:
-            viz_arr[0: int(skipped)] = [0] * int(skipped)
-            viz_arr[int(skipped + lasers):] = [0] * int(skipped)
+            viz_arr[0: self.skipped] = [0] * self.skipped
+            viz_arr[self.skipped + lasers:] = [0] * self.skipped
         return filtered
 
     def process_disparities(self, ranges):
@@ -89,8 +98,9 @@ class DisparityExtender:
                             continue
                         processed_ranges[j] = min(processed_ranges[i+1], processed_ranges[j])
 
-                    if VISUALIZATION:
-                        viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
+                        if VISUALIZATION:
+                            viz_arr[j + self.skipped] = self.blocked
+                            viz_ranges[j + self.skipped] = processed_ranges[j]
                 else:
                     # Left edge
                     safety_rays = int(self.calculate_angle(ranges[i])+0.5)
@@ -99,8 +109,9 @@ class DisparityExtender:
                             continue
                         processed_ranges[j] = min(processed_ranges[i], processed_ranges[j])
                     
-                    if VISUALIZATION:
-                        viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
+                        if VISUALIZATION:
+                            viz_arr[j + self.skipped] = self.blocked
+                            viz_ranges[j + self.skipped] = processed_ranges[j]
                     
                     # Skip the edited values
                     # i += safety_rays - 1
@@ -149,35 +160,60 @@ class DisparityExtender:
         self.drive_pub.publish(drive_msg)
         if VISUALIZATION:
             self.set_intensities(farthest)
+            self.publish_viz()
+            drive_viz_msg = PoseStamped()
+            drive_viz_msg.header.stamp = rospy.Time.now()
+            drive_viz_msg.header.frame_id = "laser"
+            drive_viz_msg.pose.orientation.y = velocity * math.sin(math.radians(angle))
+            drive_viz_msg.pose.orientation.x = velocity * math.cos(math.radians(angle))
+            self.lidar_drive_viz_pub.publish(drive_viz_msg)
 
     def get_angle(self, ranges, i):
-        return (1.0 * i / len(ranges)) * 180 - 90
+        return (1.0 * i / len(ranges)) * LIDAR_ANGULAR_RANGE - (LIDAR_ANGULAR_RANGE / 2)
+        # Funnily enough it works with the code below
+        # return (1.0 * i / len(ranges)) * 180 - 90
 
     def set_intensities(self, farthest):
         global viz_arr, lidar_data
-        i = farthest 
+        i = farthest + self.skipped
         while i < len(viz_arr):
             if viz_arr[i] == 0:
                 break
-            viz_arr[i] = 1
+            viz_arr[i] = self.chosen
             i += 1
         i = farthest
         while i > 0:
             if viz_arr[i] == 0:
                 break
-            viz_arr[i] = 1
+            viz_arr[i] = self.chosen
             i -= 1
         i = 0
         while i < len(viz_arr):
-            if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
-                viz_arr[i] = 0.5
+            if not (viz_arr[i] == 0) and not (viz_arr[i] == self.chosen):
+                viz_arr[i] = self.possible
             i += 1
         pub = lidar_data
         pub.intensities = viz_arr
-        self.lidar_viz0_pub.publish(pub)
-        self.lidar_viz1_pub.publish(pub)
-        self.lidar_viz2_pub.publish(pub)
-        
+        rospy.logdebug(viz_arr)
+        self.lidar_viz_pub.publish(pub)
+
+    def set_ranges(self):
+        global viz_ranges
+        dist = LIDAR_RANGE
+        viz_ranges = list(self.scan.ranges)
+        i = 0
+        while i < len(self.scan.ranges):
+            if viz_ranges[i] > dist:
+                viz_ranges[i] = dist
+            i += 1
+        return viz_ranges
+
+    def publish_viz(self):
+        pub = self.scan
+        pub.intensities = viz_arr
+        pub.ranges = viz_ranges
+        self.lidar_viz_pub.publish(pub)
+
 
 def main(args):
     rospy.init_node("reactive_node", anonymous=True)
