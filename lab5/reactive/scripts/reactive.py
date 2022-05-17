@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 from __future__ import print_function
 from platform import java_ver
 from re import T
@@ -13,15 +13,20 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import MarkerArray, Marker
 
 # DISPARITY EXTENDER PARAMS
+VISUALIZATION = False  # quite costly in performance, this leads to problems in the test bench
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
 MAX_SPEED = rospy.get_param('/reactive/max_speed', 1)  # m/s  (only without basic velocity)
 MIN_SPEED = rospy.get_param('/reactive/min_speed', 1)  # m/s  (only without basic velocity)
+VELOCITY_GAIN = rospy.get_param('/reactive/velocity_gain', 1)
+STEERING_GAIN = rospy.get_param('/reactive/steering_gain', 0.8)
 # The minimum distance that is considered a disparity
 DISPARITY = rospy.get_param('/reactive/disparity', 0.15)  # m
 # Safety distance to maintain from a disparity
 SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.52)  # m
-# When the distance in front is less than this, the car turns
-MIN_DISTANCE_TO_TURN = math.inf
+LIDAR_RANGE = rospy.get_param('/reactive/lidar_range', 140)  # m  # degrees
+
+# When the distance in front is less than this, the car turns (so far unused)
+MIN_DISTANCE_TO_TURN = 1000
 
 # CONSTANTS
 RAYS_PER_DEGREE = 4
@@ -49,7 +54,8 @@ class DisparityExtender:
 
     def lidar_callback(self, data):
         global viz_arr
-        viz_arr = list(data.intensities)
+        if VISUALIZATION:
+            viz_arr = list(data.intensities)
         filtered_ranges = self.filter_ranges(data)
         processed_ranges = self.process_disparities(filtered_ranges)
         self.navigate_farthest(processed_ranges)
@@ -58,15 +64,15 @@ class DisparityExtender:
     def filter_ranges(self, data):
         global viz_arr, lidar_data
         lidar_data = data
-        lasers = len(data.ranges) * 180 / 270
+        lasers = len(data.ranges) * LIDAR_RANGE / 270
         skipped = (len(data.ranges) - lasers) / 2
         filtered = data.ranges[int(skipped): int(skipped + lasers)]
-        viz_arr[0: int(skipped)] = [0] * int(skipped)
-        viz_arr[int(skipped + lasers):] = [0] * int(skipped)
+        if VISUALIZATION:
+            viz_arr[0: int(skipped)] = [0] * int(skipped)
+            viz_arr[int(skipped + lasers):] = [0] * int(skipped)
         return filtered
 
     def process_disparities(self, ranges):
-        print("")
         global viz_arr
         processed_ranges = list(ranges)
         i = 0
@@ -76,25 +82,23 @@ class DisparityExtender:
                 if ranges[i] > ranges[i + 1]:
                     # Right edge
                     safety_rays = int(self.calculate_angle(ranges[i + 1])+0.5)
-
-                    # processed_ranges[int(i - safety_rays): (i + 1)] = [ranges[i + 1]] * int(safety_rays)
                     for j in range(i - safety_rays, i+1):
                         if j < 0 or j >= len(processed_ranges):
                             continue
                         processed_ranges[j] = min(ranges[i+1], ranges[j])
 
-                    viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
+                    if VISUALIZATION:
+                        viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
                 else:
                     # Left edge
                     safety_rays = int(self.calculate_angle(ranges[i])+0.5)
-
-                    # processed_ranges[i: int(i + safety_rays + 1)] = [ranges[i]] * int(safety_rays)
                     for j in range(i, i + safety_rays + 1):
                         if j < 0 or j >= len(processed_ranges):
                             continue
                         processed_ranges[j] = min(ranges[i], ranges[j])
-
-                    viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
+                    
+                    if VISUALIZATION:
+                        viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
                     
                     # Skip the edited values
                     i += safety_rays - 1
@@ -111,13 +115,17 @@ class DisparityExtender:
         ranges_list = list(ranges)
         straight = ranges_list[int(len(ranges_list)/2)]
         farthest = ranges_list.index(max(ranges_list))
+        
+    #print(farthest)	
+
         if straight < MIN_DISTANCE_TO_TURN:
             angle = self.get_angle(ranges, farthest)
         else:
             angle = 0.0
-        # velocity = self.calculate_velocity(straight)
-        velocity = 1.2
 
+        # reduces oscillations when going at higher speeds
+        angle = STEERING_GAIN * angle
+        
         # Angle clipping. Probably handled by VESC anyway, but improves plot readablity
         if(angle > MAX_STEERING_ANGLE):
             angle = MAX_STEERING_ANGLE
@@ -125,13 +133,11 @@ class DisparityExtender:
             angle = -MAX_STEERING_ANGLE
 
         if BASIC_VELOCITY:
-            if (abs(angle) > 10):
-                velocity = 0.8
-            else:
-                velocity = 1.2
+            velocity = 1
         else:
-            # TODO find something smarter
-            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)/MAX_STEERING_ANGLE * angle
+            velocity = straight * VELOCITY_GAIN
+            if velocity > MAX_SPEED:
+                velocity = MAX_SPEED
             if velocity < MIN_SPEED:
                 velocity = MIN_SPEED
 
@@ -141,38 +147,35 @@ class DisparityExtender:
         drive_msg.drive.steering_angle = math.radians(angle)
         drive_msg.drive.speed = velocity
         self.drive_pub.publish(drive_msg)
-        self.set_intensities(farthest)
+        # self.set_intensities(farthest)
 
     def get_angle(self, ranges, i):
-        return (i / len(ranges)) * 180 - 90
+        return (1.0 * i / len(ranges)) * 180 - 90
 
-    def calculate_velocity(self, straight_distance):
-        return straight_distance * 0.5
-
-    def set_intensities(self, farthest):
-        global viz_arr, lidar_data
-        i = farthest 
-        while i < len(viz_arr):
-            if viz_arr[i] == 0:
-                break
-            viz_arr[i] = 1
-            i += 1
-        i = farthest
-        while i > 0:
-            if viz_arr[i] == 0:
-                break
-            viz_arr[i] = 1
-            i -= 1
-        i = 0
-        while i < len(viz_arr):
-            if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
-                viz_arr[i] = 0.5
-            i += 1
-        pub = lidar_data
-        pub.intensities = viz_arr
-        self.lidar_viz0_pub.publish(pub)
-        self.lidar_viz1_pub.publish(pub)
-        self.lidar_viz2_pub.publish(pub)
+    # def set_intensities(self, farthest):
+    #     global viz_arr, lidar_data
+    #     i = farthest 
+    #     while i < len(viz_arr):
+    #         if viz_arr[i] == 0:
+    #             break
+    #         viz_arr[i] = 1
+    #         i += 1
+    #     i = farthest
+    #     while i > 0:
+    #         if viz_arr[i] == 0:
+    #             break
+    #         viz_arr[i] = 1
+    #         i -= 1
+    #     i = 0
+    #     while i < len(viz_arr):
+    #         if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
+    #             viz_arr[i] = 0.5
+    #         i += 1
+    #     pub = lidar_data
+    #     pub.intensities = viz_arr
+    #     self.lidar_viz0_pub.publish(pub)
+    #     self.lidar_viz1_pub.publish(pub)
+    #     self.lidar_viz2_pub.publish(pub)
         
 
 def main(args):
@@ -183,4 +186,4 @@ def main(args):
     rospy.spin()
 
 if __name__=='__main__':
-	main(sys.argv)
+    main(sys.argv)

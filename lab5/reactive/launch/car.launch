@@ -9,13 +9,19 @@
 
     <arg name="disparity"  default="0.15"/>
     <arg name="safety_distance"  default="0.52"/>
-    <arg name="max_speed"  default="1"/>
-    <arg name="min_speed"  default="5"/>
+    <arg name="max_speed"  default="6"/>
+    <arg name="min_speed"  default="2"/>
+    <arg name="velocity_gain"  default="1.5"/>
+    <arg name="steering_gain"  default="0.3"/>
+    <arg name="lidar_range"  default="120"/>
     <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="velocity_gain"  value="$(arg velocity_gain)"/>
+        <param name="steering_gain"  value="$(arg steering_gain)"/>
         <param name="disparity"  value="$(arg disparity)"/>
         <param name="safety_distance"  value="$(arg safety_distance)"/>
+         <param name="lidar_range"  value="$(arg lidar_range)"/>
     </node>
     <!--node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" /-->
 </launch>
