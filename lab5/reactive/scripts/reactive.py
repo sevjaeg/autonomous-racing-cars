@@ -15,15 +15,17 @@ from visualization_msgs.msg import MarkerArray, Marker
 # DISPARITY EXTENDER PARAMS
 VISUALIZATION = False  # quite costly in performance, this leads to problems in the test bench
 BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = rospy.get_param('/reactive/max_speed', 1)  # m/s  (only without basic velocity)
-MIN_SPEED = rospy.get_param('/reactive/min_speed', 1)  # m/s  (only without basic velocity)
-VELOCITY_GAIN = rospy.get_param('/reactive/velocity_gain', 1)
+MAX_SPEED = rospy.get_param('/reactive/max_speed', 3)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/reactive/min_speed', 1.2)  # m/s  (only without basic velocity)
+VELOCITY_GAIN = rospy.get_param('/reactive/velocity_gain', 0.6)
 STEERING_GAIN = rospy.get_param('/reactive/steering_gain', 0.8)
 # The minimum distance that is considered a disparity
-DISPARITY = rospy.get_param('/reactive/disparity', 0.15)  # m
+DISPARITY = rospy.get_param('/reactive/disparity', 0.2)  # m
 # Safety distance to maintain from a disparity
-SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.52)  # m
-LIDAR_RANGE = rospy.get_param('/reactive/lidar_range', 140)  # m  # degrees
+SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.42)  # m
+LIDAR_ANGULAR_RANGE = rospy.get_param('/reactive/lidar_angular_range', 160)   # degrees
+LIDAR_RANGE = rospy.get_param('/reactive/lidar_range', 20) # m
+
 
 # When the distance in front is less than this, the car turns (so far unused)
 MIN_DISTANCE_TO_TURN = 1000
@@ -85,7 +87,7 @@ class DisparityExtender:
                     for j in range(i - safety_rays, i+1):
                         if j < 0 or j >= len(processed_ranges):
                             continue
-                        processed_ranges[j] = min(ranges[i+1], ranges[j])
+                        processed_ranges[j] = min(processed_ranges[i+1], processed_ranges[j])
 
                     if VISUALIZATION:
                         viz_arr[i - safety_rays: (i + 1)] = [0] * int(safety_rays)
@@ -95,28 +97,26 @@ class DisparityExtender:
                     for j in range(i, i + safety_rays + 1):
                         if j < 0 or j >= len(processed_ranges):
                             continue
-                        processed_ranges[j] = min(ranges[i], ranges[j])
+                        processed_ranges[j] = min(processed_ranges[i], processed_ranges[j])
                     
                     if VISUALIZATION:
                         viz_arr[i: i + safety_rays + 1] = [0] * int(safety_rays)
                     
                     # Skip the edited values
-                    i += safety_rays - 1
-            i += 1
-                    
+                    # i += safety_rays - 1
+            i += 1        
         return processed_ranges
 
     def calculate_angle(self, distance):
         # Calculated as 1080/270
         angle = math.degrees(math.atan(SAFETY_DISTANCE / distance))
+        
         return angle * RAYS_PER_DEGREE
 
     def navigate_farthest(self, ranges):
         ranges_list = list(ranges)
         straight = ranges_list[int(len(ranges_list)/2)]
         farthest = ranges_list.index(max(ranges_list))
-        
-    #print(farthest)	
 
         if straight < MIN_DISTANCE_TO_TURN:
             angle = self.get_angle(ranges, farthest)
