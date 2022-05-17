@@ -99,7 +99,8 @@ class DisparityExtender:
                         processed_ranges[j] = min(ranges[i+1], ranges[j])
 
                         if VISUALIZATION:
-                            viz_arr[j] = self.blocked
+                            viz_arr[j + self.skipped] = self.blocked
+                            viz_ranges[j + self.skipped] = processed_ranges[j]
                 else:
                     # Left edge
                     safety_rays = int(self.calculate_angle(ranges[i])+0.5)
@@ -109,7 +110,8 @@ class DisparityExtender:
                         processed_ranges[j] = min(ranges[i], ranges[j])
                     
                         if VISUALIZATION:
-                            viz_arr[j] = self.blocked
+                            viz_arr[j + self.skipped] = self.blocked
+                            viz_ranges[j + self.skipped] = processed_ranges[j]
                     
                     # Skip the edited values
                     i += safety_rays - 1
@@ -169,9 +171,9 @@ class DisparityExtender:
             self.lidar_drive_viz_pub.publish(drive_viz_msg)
 
     def get_angle(self, ranges, i):
-        # return (1.0 * i / len(ranges)) * LIDAR_ANGULAR_RANGE - (LIDAR_ANGULAR_RANGE / 2)
+        return (1.0 * i / len(ranges)) * LIDAR_ANGULAR_RANGE - (LIDAR_ANGULAR_RANGE / 2)
         # Funnily enough it works with the code below
-        return (1.0 * i / len(ranges)) * 180 - 90
+        # return (1.0 * i / len(ranges)) * 180 - 90
 
     def set_intensities(self, farthest):
         global viz_arr, lidar_data
