@@ -147,35 +147,36 @@ class DisparityExtender:
         drive_msg.drive.steering_angle = math.radians(angle)
         drive_msg.drive.speed = velocity
         self.drive_pub.publish(drive_msg)
-        # self.set_intensities(farthest)
+        if VISUALIZATION:
+            self.set_intensities(farthest)
 
     def get_angle(self, ranges, i):
         return (1.0 * i / len(ranges)) * 180 - 90
 
-    # def set_intensities(self, farthest):
-    #     global viz_arr, lidar_data
-    #     i = farthest 
-    #     while i < len(viz_arr):
-    #         if viz_arr[i] == 0:
-    #             break
-    #         viz_arr[i] = 1
-    #         i += 1
-    #     i = farthest
-    #     while i > 0:
-    #         if viz_arr[i] == 0:
-    #             break
-    #         viz_arr[i] = 1
-    #         i -= 1
-    #     i = 0
-    #     while i < len(viz_arr):
-    #         if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
-    #             viz_arr[i] = 0.5
-    #         i += 1
-    #     pub = lidar_data
-    #     pub.intensities = viz_arr
-    #     self.lidar_viz0_pub.publish(pub)
-    #     self.lidar_viz1_pub.publish(pub)
-    #     self.lidar_viz2_pub.publish(pub)
+    def set_intensities(self, farthest):
+        global viz_arr, lidar_data
+        i = farthest 
+        while i < len(viz_arr):
+            if viz_arr[i] == 0:
+                break
+            viz_arr[i] = 1
+            i += 1
+        i = farthest
+        while i > 0:
+            if viz_arr[i] == 0:
+                break
+            viz_arr[i] = 1
+            i -= 1
+        i = 0
+        while i < len(viz_arr):
+            if not (viz_arr[i] == 0.0) and not (viz_arr[i] == 1.0):
+                viz_arr[i] = 0.5
+            i += 1
+        pub = lidar_data
+        pub.intensities = viz_arr
+        self.lidar_viz0_pub.publish(pub)
+        self.lidar_viz1_pub.publish(pub)
+        self.lidar_viz2_pub.publish(pub)
         
 
 def main(args):
