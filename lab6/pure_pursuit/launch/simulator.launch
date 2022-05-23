@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- bunch_of_sticks / rect / rect_reverse / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
+    <arg name="map"  default="bunch_of_sticks"/>
+
+    <include file="$(find f1tenth_simulator)/launch/simulator-no-gui.launch">
+        <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
+        <arg name="map_frame"  value="map"/>
+    </include>
+    
+    <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
+
+    </node>
+</launch>

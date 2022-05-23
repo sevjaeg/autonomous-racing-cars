@@ -179,6 +179,24 @@ sudo apt-get install ros-noetic-robot-localization
 roslaunch wall_follow fusion.launch
 ```
 
+### Planner
+
+```
+pip install scikit-image
+```
+
+Launch rviz first
+
+```
+roslaunch pure_pursuit rviz.launch
+```
+
+Then launch the simulator with the planner
+
+```
+roslaunch pure_pursuit simulator.launch
+```
+
 ## Using HW data
 
 Recorded runs from INFHS (lap6 with best quality so far)
