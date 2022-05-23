@@ -9,7 +9,12 @@
         <arg name="map_frame"  value="map"/>
     </include>
     
-    <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
+    <arg name="wall_distance"  default="0.4"/>
+    <arg name="path_sparseness"  default="20"/>
 
+    <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
+     <param name="wall_distance"  value="$(arg wall_distance)"/>
+     <param name="path_sparseness"  value="$(arg path_sparseness)"/>
+     <param name="map_name"  value="$(arg map)"/>
     </node>
 </launch>

@@ -13,6 +13,8 @@ from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 
 from skimage import io, morphology, img_as_ubyte
 
@@ -26,13 +28,17 @@ class pure_pursuit:
         odom_topic = '/odom'
         path_topic = '/path'
 
-        #self.path_pub = rospy.Subscriber(path_topic, # ... todo
+        self.path_sub = rospy.Subscriber(path_topic, Path, self.path_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
         #self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
 
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
 
     def odom_callback(self, data):
+        """ Process each position update using the Pure Pursuit algorithm & publish an AckermannDriveStamped Message
+        """
+
+    def path_callback(self, data):
         """ Process each position update using the Pure Pursuit algorithm & publish an AckermannDriveStamped Message
         """
 
