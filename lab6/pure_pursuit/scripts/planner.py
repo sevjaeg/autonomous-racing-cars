@@ -71,7 +71,20 @@ class planner:
         # distances = distances/np.max(distances)
         # self.save_map(distances, num=1)
 
-        distances = self.get_distances(driveable_area)
+        shortest_lap = 99999.9
+        for start_x in range(self.start_line_left+1, self.start_line_right, 2):
+            distances = self.get_distances(driveable_area, start_x)
+            lap_length = np.max(distances[distances < 99999.9])
+            rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
+            if lap_length < shortest_lap:
+                shortest_lap = lap_length
+                best_start_x = start_x
+                shortest_distances = distances
+
+        self.start_x = best_start_x
+        rospy.loginfo("Shortest Lap: Start @" + str(self.start_x) + ": track length " + str(shortest_lap))
+
+        distances = shortest_distances
         distances_print = distances.copy()
         distances_print[driveable_area == False] = 0.0  # remove high values outside driveable area
         self.save_map(distances_print/np.max(distances_print), "3_distances")
@@ -83,24 +96,15 @@ class planner:
         path = self.calculate_path(map, distances, path_msg)
         self.save_map(path, "4_path")
 
-    def get_distances(self, driveable_area):
-        distances = np.full(self.shape, 9999.9, dtype=float)
+    def get_distances(self, driveable_area, start_x):
+        distances = np.full(self.shape, 99999.9, dtype=float)
         done_map = (~(driveable_area)).copy()
 
-        # Mark starting line as done, distance 0
-        done_map[self.start_pixel[0], self.start_pixel[1]] = True
-        distances[self.start_pixel[0], self.start_pixel[1]] = 0.0
-
-        x = self.start_pixel[0]+1
-        while driveable_area[x, self.start_pixel[1]]:
-            done_map[x, self.start_pixel[1]] = True
-            distances[x, self.start_pixel[1]] =  abs(x-self.start_pixel[0])
-            x = x + 1
-        x = self.start_pixel[0]-1
-        while driveable_area[x, self.start_pixel[1]]:
-            done_map[x, self.start_pixel[1]] = True
-            distances[x, self.start_pixel[1]] =  abs(x-self.start_pixel[0])
-            x = x - 1
+        # Mark starting line as done, distance 0 for start position
+        y = self.start_pixel[1]
+        for x in range(self.start_line_left, self.start_line_right+1):
+            done_map[x, y] = True
+            distances[x, y] =  abs(x-start_x)
 
         queue = []
         queue.append((self.start_pixel[0], self.start_pixel[1]-1))
@@ -120,23 +124,6 @@ class planner:
                     done_map[new_x, new_y] = True
                     queue.append((new_x, new_y))
         return distances
-        
-    def update_distance(self, distances, done_map, x, y):
-        print(x, y)
-        min_dist, min_x, min_y = self.get_min_dist_neighbour(done_map, distances, x, y)
-        done_map[x, y] = True
-        new_dist = np.linalg.norm(np.array([x, y]) - np.array([min_x, min_y])) + min_dist
-        if new_dist < distances[x, y]:
-            distances[x, y] = new_dist
-
-        all_done = True
-        for [step_x, step_y] in [[0, 1],[0, -1],[1, 0],[-1, 0],[1, 1],[-1, 1],[1, -1],[-1, -1]]:
-            if not done_map[x+step_x, y+step_y]:
-                all_done = False
-                self.update_distance(distances, done_map, x+step_x, y+step_y)
-        if all_done:
-            print("return at", x, y)
-            return
 
     def preprocess_map(self, data):
         map_data = np.asarray(data.data).reshape((data.info.width, data.info.height)) # parse map data into 2D numpy array
@@ -155,10 +142,20 @@ class planner:
 
     def add_safety_foam(self, driveable_area):
         binary_image = morphology.binary_erosion(driveable_area, footprint=morphology.footprints.disk(radius=self.safety_dist/self.resolution, dtype=np.bool))
+
+        x = self.start_pixel[0]+1
+        while binary_image[x, self.start_pixel[1]]:
+            x = x + 1
+        self.start_line_right = x-1
+        
+        x = self.start_pixel[0]-1
+        while binary_image[x, self.start_pixel[1]]:
+            x = x - 1
+        self.start_line_left = x+1
         return binary_image
 
     def get_min_dist_neighbour(self, done_map, distances, x, y):
-        min_dist = 9999.9
+        min_dist = 99999.9
         for [step_x, step_y] in [[0, 1],[0, -1],[1, 0],[-1, 0],[1, 1],[-1, 1],[1, -1],[-1, -1]]:
             if done_map[x+step_x, y+step_y]:
                 if distances[x+step_x, y+step_y] < min_dist:
@@ -168,20 +165,10 @@ class planner:
         return min_dist, x_min, y_min
 
     def calculate_path(self, map, distances, path_msg):
-        x = self.start_pixel[0]
+        x = self.start_x
         y = self.start_pixel[1]+2
         distance = distances[x, y]
         last_distance = distance
-
-        # TODO close loop in a smarter way
-        # xx = x
-        # while driveable_area[xx, self.start[1]]:
-        #     print(xx, y, distances[xx, y])
-        #     xx = xx + 1
-        # xx = x-1
-        # while driveable_area[xx, y]:
-        #     print(xx, y, distances[xx, y])
-        #     xx = xx - 1
 
         path = map.copy()
 
@@ -217,7 +204,6 @@ class planner:
             last_y = y
             x = best_x
             y = best_y
-        print(x, y)
 
         self.path_pub.publish(path_msg)
         return path
