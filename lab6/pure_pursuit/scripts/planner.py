@@ -9,17 +9,16 @@ import tf
 #ROS Imports
 import rospy
 import geometry_msgs
-from sensor_msgs.msg import LaserScan
-from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
+
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from nav_msgs.msg import Odometry
 
 from skimage import io, morphology, img_as_ubyte
+from skimage.filters import gaussian
 
 
 class planner:
@@ -33,10 +32,16 @@ class planner:
         self.path_pub = rospy.Publisher(path_topic, Path, queue_size=10)
 
         # Parameters
-        self.occupied_thresh = 0.65
+
+        # False: basic approach as in assignment
+        # True:  gradient descent based path calculation with larger step size
+        self.USE_GRADIENT_DESCENT = rospy.get_param('/planner/use_gradient_descent', False)
+        
+        self.occupied_thresh = 0.65  # map pixels are considered occupied if larger than this value
+
         self.safety_dist = rospy.get_param('/planner/wall_distance', 0.4)  # safety foam radius (m)
-        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 20)  # distance between waypoints (in pixel)
-        self.map_name = rospy.get_param('/planner/map_name', "")  # safety foam radius (m)
+        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 20)  # distance between waypoints (in pixels)
+        self.map_name = rospy.get_param('/planner/map_name', "")  # name for the exported map
 
         # Path for saving maps
         self.savepath = os.path.dirname(os.path.realpath(__file__)) + "/../maps"
@@ -72,7 +77,7 @@ class planner:
         # self.save_map(distances, num=1)
 
         shortest_lap = 99999.9
-        for start_x in range(self.start_line_left+1, self.start_line_right, 2):
+        for start_x in range(self.start_line_left+1, self.start_line_right, 3):
             distances = self.get_distances(driveable_area, start_x)
             lap_length = np.max(distances[distances < 99999.9])
             rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
@@ -166,16 +171,19 @@ class planner:
 
     def calculate_path(self, map, distances, path_msg):
         x = self.start_x
-        y = self.start_pixel[1]+2
+        y = self.start_pixel[1] + 2
         distance = distances[x, y]
         last_distance = distance
 
         path = map.copy()
 
+        best_x = x
+        best_y = y + 1
+
         path[x,y] = 0.0
-        for [step_x, step_y] in [[0, 1],[1, 0],[-1, 0],[1, 1],[-1, 1]]:
-            new_x = x+step_x
-            new_y = y+step_y
+        for [step_x, step_y] in [[0, 1],[1, 0],[-1, 0],[1, 1],[-1, 1]]:  # only steps up (or sideways)
+            new_x = x + step_x
+            new_y = y + step_y
             if distances[new_x, new_y] < distance:
                 distance = distances[new_x, new_y]
                 best_x = new_x
@@ -185,37 +193,83 @@ class planner:
         x = best_x
         y = best_y
 
-        self.add_pose_to_path(path_msg, x, y, last_x, last_y)
+        # Not broadcasting a position at the start reduces problems with a non-central start
+        # self.add_pose_to_path(path_msg, x, y, last_x=last_x, last_y=last_y)
 
-        while(distance > 0.0):
-            path[x,y] = 0.0
-            if last_distance-distance >= self.path_sparseness:
-                self.add_pose_to_path(path_msg, x, y, last_x, last_y)
-                last_distance = distance
+        if not self.USE_GRADIENT_DESCENT:
+            while(distance > 0.0):
+                path[x,y] = 0.0
+                if last_distance-distance >= self.path_sparseness:
+                    self.add_pose_to_path(path_msg, x, y, last_x=last_x, last_y=last_y)
+                    last_distance = distance
 
-            for [step_x, step_y] in [[0, 1], [0, -1],[1, 0],[-1, 0],[1, 1],[-1, 1],[1, -1],[-1, -1]]:
-                new_x = x+step_x
-                new_y = y+step_y
-                if distances[new_x, new_y] < distance:
-                    distance = distances[new_x, new_y]
-                    best_x = new_x
-                    best_y = new_y
-            last_x = x
-            last_y = y
-            x = best_x
-            y = best_y
+                for [step_x, step_y] in [[0, 1], [0, -1],[1, 0],[-1, 0],[1, 1],[-1, 1],[1, -1],[-1, -1]]:
+                    new_x = x+step_x
+                    new_y = y+step_y
+                    if distances[new_x, new_y] < distance:
+                        distance = distances[new_x, new_y]
+                        best_x = new_x
+                        best_y = new_y
+                last_x = x
+                last_y = y
+                x = best_x
+                y = best_y
+        else:  # work in progress for gradient-based path
+            STEP_SIZE = 3*np.sqrt(2)
+            SIGMA = 0.25
+            EPS = 0.033
+
+            g_x, g_y = np.gradient(distances)
+
+            orientation = np.arctan2(g_x, g_y)+np.pi
+
+            orientation = gaussian(orientation, sigma=SIGMA)
+
+            self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "orientation")
+            dir = orientation[x, y]
+
+            i = 0
+            # while(i < 2000):
+            while(distance > STEP_SIZE-1):
+                # rospy.loginfo(str(x) +" "+ str(y) + " dist: " + str(distance) + " orientation: " + str(math.degrees(orientation[x, y])))
+                path[x,y] = 0.0
+                
+                if last_distance-distance >= self.path_sparseness:
+                    self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
+                    last_distance = distance
+
+                dir = EPS * dir + (1-EPS) * orientation[x, y] 
+                # consider next gradient
+                # + EPS * orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])), int(y + STEP_SIZE * np.cos(orientation[x,y]))]
+
+                new_x = x + STEP_SIZE * np.sin(dir)
+                new_y = y + STEP_SIZE * np.cos(dir)
+
+                last_x = x
+                last_y = y
+
+                x = int(new_x+0.5)
+                y = int(new_y+0.5)
+                distance = distances[x, y]
+                i += 1
 
         self.path_pub.publish(path_msg)
         return path
 
-    def add_pose_to_path(self, path_msg, x, y, last_x, last_y):
+    def add_pose_to_path(self, path_msg, x, y, last_x=-1, last_y=-1, orientation=0.0):
         pose_msg = PoseStamped()
         pose_msg.header.frame_id = "map"
         pose_msg.header.stamp = rospy.get_rostime() 
         pose_msg.pose.position.x = self.resolution*y + self.start_position[0]
         pose_msg.pose.position.y = self.resolution*x + self.start_position[1]
         pose_msg.pose.position.z = 0.0
-        pose_msg.pose.orientation = geometry_msgs.msg.Quaternion(*tf.transformations.quaternion_from_euler(0.0, 0.0, math.atan2(x-last_x, y-last_y)))
+
+        if last_x == -1 and last_y == -1:
+            orientation = orientation
+        else:
+            orientation = math.atan2(x-last_x, y-last_y)
+
+        pose_msg.pose.orientation = geometry_msgs.msg.Quaternion(*tf.transformations.quaternion_from_euler(0.0, 0.0, orientation))
         path_msg.poses.append(pose_msg)
 
     def save_map(self, map, name=""):

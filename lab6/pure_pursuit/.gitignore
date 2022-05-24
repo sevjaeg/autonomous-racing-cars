@@ -1,0 +1,4 @@
+maps/*.png
+
+!maps/bunch_of_sticks_4_path_basic.png
+!maps/bunch_of_sticks_4_path_gradient.png
