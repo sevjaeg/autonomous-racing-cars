@@ -79,9 +79,9 @@ class planner:
         shortest_lap = 99999.9
         for start_x in range(self.start_line_left+1, self.start_line_right, 3):
             distances = self.get_distances(driveable_area, start_x)
-            lap_length = np.max(distances[distances < 99999.9])
+            lap_length = distances[start_x, self.start_pixel[1] + 2]
             rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
-            if lap_length < shortest_lap:
+            if lap_length <= shortest_lap:
                 shortest_lap = lap_length
                 best_start_x = start_x
                 shortest_distances = distances
