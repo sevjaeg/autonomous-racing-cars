@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-    <!-- bunch_of_sticks / rect / rect_reverse / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
+    <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
     <arg name="map"  default="bunch_of_sticks"/>
 
     <include file="$(find f1tenth_simulator)/launch/simulator-no-gui.launch">

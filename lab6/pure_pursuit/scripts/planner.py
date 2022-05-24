@@ -77,7 +77,7 @@ class planner:
         # self.save_map(distances, num=1)
 
         shortest_lap = 99999.9
-        for start_x in range(self.start_line_left+1, self.start_line_right, 3):
+        for start_x in range(self.start_line_left+1, self.start_line_right, 4):
             distances = self.get_distances(driveable_area, start_x)
             lap_length = distances[start_x, self.start_pixel[1] + 2]
             rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
@@ -215,9 +215,10 @@ class planner:
                 x = best_x
                 y = best_y
         else:  # work in progress for gradient-based path
-            STEP_SIZE = 3*np.sqrt(2)
-            SIGMA = 0.25
-            EPS = 0.033
+            STEP_SIZE = 3.2 * np.sqrt(2)
+            SIGMA = 0 # 0.25
+            EPS = 0.5 # 0.033
+            EPS2 = 0.25
 
             g_x, g_y = np.gradient(distances)
 
@@ -238,9 +239,12 @@ class planner:
                     self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
                     last_distance = distance
 
-                dir = EPS * dir + (1-EPS) * orientation[x, y] 
+                if np.abs(dir - orientation[x, y]) < math.radians(50) and np.abs(orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)] - orientation[x, y]) < math.radians(50):
+                    dir = EPS * dir + (1-EPS - EPS2) * orientation[x, y] + EPS2 * orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)]
+                else:
+                    dir = orientation[x, y]
                 # consider next gradient
-                # + EPS * orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])), int(y + STEP_SIZE * np.cos(orientation[x,y]))]
+                # 
 
                 new_x = x + STEP_SIZE * np.sin(dir)
                 new_y = y + STEP_SIZE * np.cos(dir)
@@ -252,6 +256,8 @@ class planner:
                 y = int(new_y+0.5)
                 distance = distances[x, y]
                 i += 1
+
+        # TODO clean up path
 
         self.path_pub.publish(path_msg)
         return path
