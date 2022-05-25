@@ -24,7 +24,11 @@ from skimage import io, morphology, img_as_ubyte
 # Parameters of Pure Pursuit
 LOOKAHEAD_DISTANCE = rospy.get_param('/pure_pursuit/lookahead_distance', 1)
 STEERING_GAIN = rospy.get_param('/pure_pursuit/steering_gain', 30)
-VELOCITY = rospy.get_param('/pure_pursuit/velocity', 2)
+BASIC_VELOCITY = rospy.get_param('/pure_pursuit/basic_velocity', True)
+VELOCITY = 2
+MAX_SPEED = rospy.get_param('/pure_pursuit/max_speed', 3)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/pure_pursuit/min_speed', 1.2)  # m/s  (only without basic velocity)
+VELOCITY_GAIN = rospy.get_param('/pure_pursuit/velocity_gain', 0.6)
 
 class pure_pursuit:
 
@@ -39,9 +43,11 @@ class pure_pursuit:
 
         self.path_sub = rospy.Subscriber(path_topic, Path, self.path_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
-        #self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
+        if not BASIC_VELOCITY:
+            self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
         self.path_poses = None
+        self.velocity = VELOCITY
 
         self.tf_buffer = tf2_ros.Buffer()
         listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -54,6 +60,15 @@ class pure_pursuit:
         self.path_poses = data.poses
         print("Map received")
 
+    # Calculate the velocity based on the distance in front of the car
+    def lidar_callback(self, data):
+        velocity = data.ranges[540] * VELOCITY_GAIN
+        if velocity > MAX_SPEED:
+            velocity = MAX_SPEED
+        if velocity < MIN_SPEED:
+            velocity = MIN_SPEED
+        self.velocity = velocity
+
     def pursuit_algorithm(self, data):
         current = data.pose.pose.position
         if self.path_poses is None:
@@ -61,8 +76,7 @@ class pure_pursuit:
         goal = self.get_goal(current)
         local_position = self.get_local_position(goal)
         angle = self.get_steering_angle(local_position)
-        vel = VELOCITY
-        self.publish_drive_msg(vel, angle)
+        self.publish_drive_msg(self.velocity, angle)
 
     # Return the index and the distance of the nearest point in the path
     def find_nearest(self, current_position):
@@ -112,7 +126,7 @@ class pure_pursuit:
         drive_msg = AckermannDriveStamped()
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.header.frame_id = "laser"
-        drive_msg.drive.steering_angle = math.radians(angle)
+        drive_msg.drive.steering_angle = angle
         drive_msg.drive.speed = velocity
         self.drive_pub.publish(drive_msg)
 
