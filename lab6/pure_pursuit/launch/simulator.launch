@@ -9,7 +9,7 @@
         <arg name="map_frame"  value="map"/>
     </include>
     
-    <arg name="use_gradient_descent"  default="False"/>
+    <arg name="use_gradient_descent"  default="True"/>
     <arg name="wall_distance"  default="0.4"/>
     <arg name="path_sparseness"  default="0.8"/>
 
