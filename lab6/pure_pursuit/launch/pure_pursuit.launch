@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
+    <arg name="map"  default="bunch_of_sticks"/>
+
+    <include file="$(find f1tenth_simulator)/launch/simulator.launch">
+        <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
+        <arg name="map_frame"  value="map"/>
+    </include>
+
+    <node name="pure_pursuit" pkg="pure_pursuit" type="pure_pursuit.py" output="screen">
+    </node>
+
+    <arg name="use_gradient_descent"  default="False"/>
+    <arg name="wall_distance"  default="0.4"/>
+    <arg name="path_sparseness"  default="0.1"/>
+
+    <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
+     <param name="use_gradient_descent"  value="$(arg use_gradient_descent)"/>
+     <param name="wall_distance"  value="$(arg wall_distance)"/>
+     <param name="path_sparseness"  value="$(arg path_sparseness)"/>
+     <param name="map_name"  value="$(arg map)"/>
+    </node>
+</launch>
