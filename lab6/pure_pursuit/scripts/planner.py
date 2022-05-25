@@ -40,7 +40,7 @@ class planner:
         self.occupied_thresh = 0.65  # map pixels are considered occupied if larger than this value
 
         self.safety_dist = rospy.get_param('/planner/wall_distance', 0.4)  # safety foam radius (m)
-        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 20)  # distance between waypoints (in pixels)
+        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 0.8)  # distance between waypoints (in meters)
         self.map_name = rospy.get_param('/planner/map_name', "")  # name for the exported map
 
         # Path for saving maps
@@ -60,6 +60,8 @@ class planner:
         self.resolution = data.info.resolution
         self.start_pixel = (int(-self.start_position[0]/self.resolution),
                             int(-self.start_position[1]/self.resolution))
+
+        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 0.8)/self.resolution
         
         map = self.preprocess_map(data)
     
