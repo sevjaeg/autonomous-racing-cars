@@ -9,7 +9,13 @@
         <arg name="map_frame"  value="map"/>
     </include>
 
+    <arg name="lookahead_distance" default="1"/>
+    <arg name="steering_gain" default="30"/>
+    <arg name="velocity" default="2"/>
     <node name="pure_pursuit" pkg="pure_pursuit" type="pure_pursuit.py" output="screen">
+        <param name="lookahead_distance" value="$(arg lookahead_distance)"/>
+        <param name="steering_gain" value="$(arg steering_gain)"/>
+        <param name="velocity" value="$(arg velocity)"/>
     </node>
 
     <arg name="use_gradient_descent"  default="False"/>

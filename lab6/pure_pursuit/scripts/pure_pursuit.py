@@ -21,11 +21,13 @@ import tf2_geometry_msgs
 
 from skimage import io, morphology, img_as_ubyte
 
+# Parameters of Pure Pursuit
+LOOKAHEAD_DISTANCE = rospy.get_param('/pure_pursuit/lookahead_distance', 1)
+STEERING_GAIN = rospy.get_param('/pure_pursuit/steering_gain', 30)
+VELOCITY = rospy.get_param('/pure_pursuit/velocity', 2)
 
 class pure_pursuit:
-    # Parameters of Pure Pursuit
-    LOOKAHED_DISTANCE = 1
-    STEERING_GAIN = 50
+
 
     def __init__(self):
         #Topics & Subscriptions,Publishers
@@ -41,6 +43,10 @@ class pure_pursuit:
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
         self.path_poses = None
 
+        self.tf_buffer = tf2_ros.Buffer()
+        listener = tf2_ros.TransformListener(self.tf_buffer)
+
+
     def odom_callback(self, data):
         self.pursuit_algorithm(data)
 
@@ -55,8 +61,8 @@ class pure_pursuit:
         goal = self.get_goal(current)
         local_position = self.get_local_position(goal)
         angle = self.get_steering_angle(local_position)
-        velocity = 1
-        self.publish_drive_msg(velocity, angle)
+        vel = VELOCITY
+        self.publish_drive_msg(vel, angle)
 
     # Return the index and the distance of the nearest point in the path
     def find_nearest(self, current_position):
@@ -79,7 +85,7 @@ class pure_pursuit:
         pose = self.path_poses[index]
         # Avoid infinite loop
         iterations = 0
-        while distance < self.LOOKAHED_DISTANCE and iterations <= len(self.path_poses):
+        while distance < LOOKAHEAD_DISTANCE and iterations <= len(self.path_poses):
             if index < len(self.path_poses) - 1:
                 index += 1
             else:
@@ -98,8 +104,8 @@ class pure_pursuit:
     # Get the steering angle from the curvature calculated with the formula GAMMA = 2y/L^2
     def get_steering_angle(self, position):
         y = position.y
-        curvature = (2 * y) / (self.LOOKAHED_DISTANCE * self.LOOKAHED_DISTANCE)
-        steering_angle = self.STEERING_GAIN * curvature
+        curvature = (2 * y) / (LOOKAHEAD_DISTANCE * LOOKAHEAD_DISTANCE)
+        steering_angle = STEERING_GAIN * curvature
         return steering_angle
 
     def publish_drive_msg(self, velocity, angle):
@@ -113,9 +119,6 @@ class pure_pursuit:
     def transform_pose(self, input, from_frame, to_frame):
         input_pose = input.pose
 
-        tf_buffer = tf2_ros.Buffer()
-        listener = tf2_ros.TransformListener(tf_buffer)
-
         pose_stamped = tf2_geometry_msgs.PoseStamped()
         pose_stamped.pose = input_pose
         pose_stamped.header.frame_id = from_frame
@@ -123,7 +126,7 @@ class pure_pursuit:
 
         try:
             # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-            output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+            output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
             return output_pose_stamped.pose
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
