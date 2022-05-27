@@ -41,12 +41,13 @@ class pure_pursuit:
         odom_topic = '/odom'
         path_topic = '/path'
 
+        self.path_poses = None
+
         self.path_sub = rospy.Subscriber(path_topic, Path, self.path_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
         if not BASIC_VELOCITY:
             self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
-        self.path_poses = None
         self.velocity = VELOCITY
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -70,6 +71,7 @@ class pure_pursuit:
         self.velocity = velocity
 
     def pursuit_algorithm(self, data):
+        print("path_poses pursuit algo: ", True if self.path_poses else False)
         current = data.pose.pose.position
         if self.path_poses is None:
             return

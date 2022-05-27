@@ -33,7 +33,7 @@ class planner:
         path_topic = '/path'
 
         self.map_sub = rospy.Subscriber(map_topic, OccupancyGrid, self.map_callback, queue_size=1)
-        self.path_pub = rospy.Publisher(path_topic, Path, queue_size=10)
+        self.path_pub = rospy.Publisher(path_topic, Path, queue_size=10, latch=True)
 
         # Parameters
 
