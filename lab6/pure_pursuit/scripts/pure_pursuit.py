@@ -71,7 +71,6 @@ class pure_pursuit:
         self.velocity = velocity
 
     def pursuit_algorithm(self, data):
-        print("path_poses pursuit algo: ", True if self.path_poses else False)
         current = data.pose.pose.position
         if self.path_poses is None:
             return
