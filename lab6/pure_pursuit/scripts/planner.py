@@ -182,11 +182,13 @@ class planner:
         return min_dist, x_min, y_min
 
     def calculate_path(self, map, distances, path_msg):
+        # Start a little above the starting line as the line has distance 0, the pixes above have distance 1
         START_OFFSET = 2
+
         x = self.start_x
         y = self.start_pixel[1] + START_OFFSET
-
         self.path_length += 1.0 * START_OFFSET
+        path = map.copy()
 
         distance = distances[x, y]
         last_distance = distance
@@ -195,20 +197,26 @@ class planner:
 
         path = map.copy()
 
-        best_x = x
-        best_y = y + 1
+        best_x = -1
+        best_y = -1
 
         # no curvature initially
 
         path[x,y] = 0.0
         self.path_points.append((x, y))
-        for [step_x, step_y] in [[0, 1],[1, 0],[-1, 0],[1, 1],[-1, 1]]:  # only steps up (or sideways)
+        # Fist step: only steps up (or sideways) as first gradient points towards line
+        for [step_x, step_y] in [[0, 1],[1, 0],[-1, 0],[1, 1],[-1, 1]]:  
             new_x = x + step_x
             new_y = y + step_y
             if distances[new_x, new_y] < distance:
                 distance = distances[new_x, new_y]
                 best_x = new_x
                 best_y = new_y
+
+        if best_x == -1 and best_y == -1:
+            rospy.logerr("No valid path found from this starting position. Consider increasing START_OFFSET.")
+            exit(-1)
+        
         last_x = x
         last_y = y
         x = best_x
@@ -242,15 +250,13 @@ class planner:
             SIGMA = 0 # 0.25
             EPS = 0.4 # 0.033
             EPS2 = 0.2
+            MAX_REASONABLE_ANGLE = math.radians(60)
 
             g_x, g_y = np.gradient(distances)
             orientation = np.arctan2(g_x, g_y)+np.pi
+
+            # Blur orientation field: problem around starting line
             orientation = gaussian(orientation, sigma=SIGMA)
-
-           
-
-            
-
             self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "orientation")
             dir = orientation[x, y]
 
@@ -278,7 +284,10 @@ class planner:
 
                 last_direction = dir
 
-                if np.abs(dir - orientation[x, y]) < math.radians(60) and np.abs(orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)] - orientation[x, y]) < math.radians(60):
+                if np.abs(dir - orientation[x, y]) < MAX_REASONABLE_ANGLE and \
+                   np.abs(orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5),
+                          int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)] - orientation[x, y]
+                         ) < MAX_REASONABLE_ANGLE:
                     dir = EPS * dir + (1-EPS - EPS2) * orientation[x, y] + EPS2 * orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)]
                     next_step = STEP_SIZE
                 else:
