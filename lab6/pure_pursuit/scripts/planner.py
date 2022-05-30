@@ -158,7 +158,7 @@ class planner:
         return driveable_area
 
     def add_safety_foam(self, driveable_area):
-        binary_image = morphology.binary_erosion(driveable_area, footprint=morphology.footprints.disk(radius=self.safety_dist/self.resolution, dtype=np.bool))
+        binary_image = morphology.binary_erosion(driveable_area, footprint=morphology.footprints.disk(radius=self.safety_dist/self.resolution, dtype=bool))
 
         x = self.start_pixel[0]+1
         while binary_image[x, self.start_pixel[1]]:
@@ -191,10 +191,14 @@ class planner:
         distance = distances[x, y]
         last_distance = distance
 
+        curvature =  np.full(self.shape, MAX_FLOAT, dtype=float)
+
         path = map.copy()
 
         best_x = x
         best_y = y + 1
+
+        # no curvature initially
 
         path[x,y] = 0.0
         self.path_points.append((x, y))
@@ -240,10 +244,12 @@ class planner:
             EPS2 = 0.2
 
             g_x, g_y = np.gradient(distances)
-
             orientation = np.arctan2(g_x, g_y)+np.pi
-
             orientation = gaussian(orientation, sigma=SIGMA)
+
+           
+
+            
 
             self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "orientation")
             dir = orientation[x, y]
@@ -259,7 +265,18 @@ class planner:
                 
                 if last_distance-distance >= self.path_sparseness:
                     self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
+                    # TODO use odometric distance?
                     last_distance = distance
+
+                # TODO implement curve radius function
+                LOOKAHEAD_DISTANCE = 5
+                DISTANCE_WEIGHT = 0.7
+                CURVATURE_WEIGHT = 1-DISTANCE_WEIGHT
+
+                # get_reasonable_steps: return legal pixels (given position, step size, angular range, init dir)
+                # get_reasonable_steps((x, y), STEP_SIZE, np.pi, last_direction)
+
+                last_direction = dir
 
                 if np.abs(dir - orientation[x, y]) < math.radians(60) and np.abs(orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)] - orientation[x, y]) < math.radians(60):
                     dir = EPS * dir + (1-EPS - EPS2) * orientation[x, y] + EPS2 * orientation[int(x + STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + STEP_SIZE * np.cos(orientation[x,y])+0.5)]
@@ -267,8 +284,6 @@ class planner:
                 else:
                     dir = orientation[x, y]
                     next_step = np.sqrt(2)
-                # consider next gradient
-                # 
 
                 new_x = int(x + next_step * np.sin(dir)+0.5)
                 new_y = int(y + next_step * np.cos(dir)+0.5)
