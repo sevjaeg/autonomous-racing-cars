@@ -44,7 +44,7 @@ class planner:
         self.occupied_thresh = 0.65  # map pixels are considered occupied if larger than this value
 
         self.safety_dist = rospy.get_param('/planner/wall_distance', 0.6)  # safety foam radius (m)
-        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 0.3)  # distance between waypoints (in meters)
+        self.waypoint_distance = rospy.get_param('/planner/waypoint_distance', 0.3)  # distance between waypoints (in meters)
         self.map_name = rospy.get_param('/planner/map_name', "")  # name for the exported map
 
         # Path for saving maps
@@ -68,7 +68,7 @@ class planner:
         self.start_pixel = (int(-self.start_position[0]/self.resolution),
                             int(-self.start_position[1]/self.resolution))
 
-        self.path_sparseness = rospy.get_param('/planner/path_sparseness', 0.8)/self.resolution
+        self.waypoint_distance = rospy.get_param('/planner/waypoint_distance', 0.8)/self.resolution
         
         map = self.preprocess_map(data)
     
@@ -77,13 +77,6 @@ class planner:
 
         driveable_area = self.add_safety_foam(driveable_area)
         self.save_map(driveable_area, "2_drivable_area_safety")
-
-        # TODO consider potential fields
-        # x = np.tile(np.linspace(0, driveable_area.shape[0]-1, driveable_area.shape[0]), driveable_area.shape[1]).reshape((driveable_area.shape[0], driveable_area.shape[1]))
-        # y = np.transpose(x)
-        # distances = np.where(driveable_area, np.sqrt((x - self.start[0]) ** 2 + (y - self.start[1]) ** 2), driveable_area)
-        # distances = distances/np.max(distances)
-        # self.save_map(distances, num=1)
 
         shortest_lap = MAX_FLOAT
         for start_x in range(self.start_line_left+1, self.start_line_right, 4):
@@ -230,7 +223,7 @@ class planner:
                 path[x,y] = 0.0
                 self.path_length += np.linalg.norm(np.array([x, y]) - np.array([last_x, last_y]))
                 self.path_points.append((x, y))
-                if last_distance-distance >= self.path_sparseness:
+                if last_distance-distance >= self.waypoint_distance:
                     self.add_pose_to_path(path_msg, x, y, last_x=last_x, last_y=last_y)
                     last_distance = distance
 
@@ -269,7 +262,7 @@ class planner:
                 self.path_length += np.linalg.norm(np.array([x, y]) - np.array([last_x, last_y]))
                 self.path_points.append((x, y))
                 
-                if last_distance-distance >= self.path_sparseness:
+                if last_distance-distance >= self.waypoint_distance:
                     self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
                     # TODO use odometric distance?
                     last_distance = distance
