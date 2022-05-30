@@ -29,6 +29,10 @@ VELOCITY = 2
 MAX_SPEED = rospy.get_param('/pure_pursuit/max_speed', 4)  # m/s  (only without basic velocity)
 MIN_SPEED = rospy.get_param('/pure_pursuit/min_speed', 1.5)  # m/s  (only without basic velocity)
 VELOCITY_GAIN = rospy.get_param('/pure_pursuit/velocity_gain', 1.0)
+# Visualization parameters
+VISUALIZATION = rospy.get_param('/pure_pursuit/visualization', False)
+LOG_OUTPUT = rospy.get_param('/pure_pursuit/log_output', 100) # only every 100th message
+QUEUE_LENGTH = rospy.get_param('/pure_pursuit/queue_length', 100) # number of message points displayed
 
 class pure_pursuit:
 
@@ -40,20 +44,35 @@ class pure_pursuit:
         map_topic = '/map'
         odom_topic = '/odom'
         path_topic = '/path'
+        marker_goal_topic = '/marker_goal'
+        trajectory_topic = '/trajectory'
+
+        self.path_poses = None
+        self.velocity = VELOCITY
+        self.log_counter = 0
+        
+        if VISUALIZATION:
+            self.init_trail()
 
         self.path_sub = rospy.Subscriber(path_topic, Path, self.path_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
         if not BASIC_VELOCITY:
             self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
-        self.path_poses = None
-        self.velocity = VELOCITY
+        self.marker_goal_pub = rospy.Publisher(marker_goal_topic, Marker, queue_size=1)
+        self.trajectory_pub = rospy.Publisher(trajectory_topic, Marker, queue_size=1)
 
         self.tf_buffer = tf2_ros.Buffer()
         listener = tf2_ros.TransformListener(self.tf_buffer)
 
 
     def odom_callback(self, data):
+        if self.log_counter % int(LOG_OUTPUT) == 0:
+            rospy.loginfo('x: %s, y: %s', data.pose.pose.position.x, data.pose.pose.position.y)
+            if VISUALIZATION:
+                self.visualize_trail(data)
+        self.log_counter += 1
+        
         self.pursuit_algorithm(data)
 
     def path_callback(self, data):
@@ -74,6 +93,8 @@ class pure_pursuit:
         if self.path_poses is None:
             return
         goal = self.get_goal(current)
+        if VISUALIZATION:
+            self.visualize_goal(goal)
         local_position = self.get_local_position(goal)
         angle = self.get_steering_angle(local_position)
         self.publish_drive_msg(self.velocity, angle)
@@ -146,6 +167,51 @@ class pure_pursuit:
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             raise
 
+    def visualize_goal(self, goal):
+        # print(goal)
+        marker_goal = Marker()
+        marker_goal.header.frame_id = 'map'
+        marker_goal.header.stamp = rospy.Time.now()
+        marker_goal.type = 2
+        marker_goal.pose = goal.pose
+        marker_goal.scale.x = .3
+        marker_goal.scale.y = .3
+        marker_goal.scale.z = .3
+        marker_goal.color.a = 1
+        marker_goal.color.r = 0
+        marker_goal.color.g = 0
+        marker_goal.color.b = 1
+        # marker_goal.color = [1, 0, 1, 0]
+        self.marker_goal_pub.publish(marker_goal)
+
+    def init_trail(self):
+        self.points = []
+        self.trajectory_msg = Marker()
+        self.trajectory_msg.header.frame_id = 'map'
+        self.trajectory_msg.type = 7        
+        self.trajectory_msg.scale.x = .3
+        self.trajectory_msg.scale.y = .3
+        self.trajectory_msg.scale.z = .3
+        self.trajectory_msg.color.a = 1
+        self.trajectory_msg.color.r = 1
+        self.trajectory_msg.color.g = 1
+        self.trajectory_msg.color.b = 0
+        self.trajectory_msg.pose.position.x = 0
+        self.trajectory_msg.pose.position.y = 0
+        self.trajectory_msg.pose.position.z = 0
+        self.trajectory_msg.pose.orientation.w = 0
+        self.trajectory_msg.pose.orientation.x = 0
+        self.trajectory_msg.pose.orientation.y = 0
+        self.trajectory_msg.pose.orientation.z = 0
+
+    def visualize_trail(self, data):
+        self.trajectory_msg.header.stamp = rospy.Time.now()
+        point = Point(data.pose.pose.position.x, data.pose.pose.position.y, data.pose.pose.position.z)
+        self.points.append(point)
+        if (len(self.points) > QUEUE_LENGTH):
+            self.points.pop(0)
+        self.trajectory_msg.points = self.points
+        self.trajectory_pub.publish(self.trajectory_msg)
 
 def main(args):
     rospy.init_node("pure_pursuit_node", anonymous=True)
