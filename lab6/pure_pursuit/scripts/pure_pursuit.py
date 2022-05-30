@@ -31,7 +31,8 @@ MIN_SPEED = rospy.get_param('/pure_pursuit/min_speed', 1.5)  # m/s  (only withou
 VELOCITY_GAIN = rospy.get_param('/pure_pursuit/velocity_gain', 1.0)
 # Visualization parameters
 VISUALIZATION = rospy.get_param('/pure_pursuit/visualization', False)
-LOG_OUTPUT = rospy.get_param('/pure_pursuit/log_output', 100) # only every 100th message
+LOG_OUTPUT = rospy.get_param('/pure_pursuit/log_output', True)
+LOG_OUTPUT_LENGTH = rospy.get_param('/pure_pursuit/log_output_length', 100) # only every 100th message
 QUEUE_LENGTH = rospy.get_param('/pure_pursuit/queue_length', 100) # number of message points displayed
 
 class pure_pursuit:
@@ -67,8 +68,9 @@ class pure_pursuit:
 
 
     def odom_callback(self, data):
-        if self.log_counter % int(LOG_OUTPUT) == 0:
-            rospy.loginfo('x: %s, y: %s', data.pose.pose.position.x, data.pose.pose.position.y)
+        if self.log_counter % int(LOG_OUTPUT_LENGTH) == 0:
+            if LOG_OUTPUT:
+                rospy.loginfo('x: %s, y: %s', data.pose.pose.position.x, data.pose.pose.position.y)
             if VISUALIZATION:
                 self.visualize_trail(data)
         self.log_counter += 1

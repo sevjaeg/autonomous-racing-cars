@@ -17,7 +17,8 @@
     <arg name="basic_velocity"  default="False"/>
     <!-- Visualization parameters -->
     <arg name="visualization" default="False"/>
-    <arg name="log_output" default="100"/>
+    <arg name="log_output_length" default="100"/>
+    <arg name="log_output" default="True"/>
     <arg name="queue_length" default="100"/>
     <node name="pure_pursuit" pkg="pure_pursuit" type="pure_pursuit.py" output="screen">
         <param name="lookahead_distance" value="$(arg lookahead_distance)"/>
@@ -28,6 +29,7 @@
         <param name="basic_velocity"  value="$(arg basic_velocity)"/>
         <param name="visualization" value="$(arg visualization)"/>
         <param name="queue_length" value="$(arg queue_length)"/>
+        <param name="log_output_length" value="$(arg log_output_length)"/>
         <param name="log_output" value="$(arg log_output)"/>
     </node>
 
