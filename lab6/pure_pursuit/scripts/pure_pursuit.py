@@ -22,13 +22,13 @@ import tf2_geometry_msgs
 from skimage import io, morphology, img_as_ubyte
 
 # Parameters of Pure Pursuit
-LOOKAHEAD_DISTANCE = rospy.get_param('/pure_pursuit/lookahead_distance', 1)
+LOOKAHEAD_DISTANCE = rospy.get_param('/pure_pursuit/lookahead_distance', 1.2)
 STEERING_GAIN = rospy.get_param('/pure_pursuit/steering_gain', 0.5)
 BASIC_VELOCITY = rospy.get_param('/pure_pursuit/basic_velocity', False)
 VELOCITY = 2
-MAX_SPEED = rospy.get_param('/pure_pursuit/max_speed', 4)  # m/s  (only without basic velocity)
-MIN_SPEED = rospy.get_param('/pure_pursuit/min_speed', 1.5)  # m/s  (only without basic velocity)
-VELOCITY_GAIN = rospy.get_param('/pure_pursuit/velocity_gain', 1.0)
+MAX_SPEED = rospy.get_param('/pure_pursuit/max_speed', 5)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/pure_pursuit/min_speed', 1.75)  # m/s  (only without basic velocity)
+VELOCITY_GAIN = rospy.get_param('/pure_pursuit/velocity_gain', 1.25)
 # Visualization parameters
 VISUALIZATION = rospy.get_param('/pure_pursuit/visualization', False)
 LOG_OUTPUT = rospy.get_param('/pure_pursuit/log_output', True)

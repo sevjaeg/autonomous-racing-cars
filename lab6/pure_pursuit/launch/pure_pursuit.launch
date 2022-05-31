@@ -9,16 +9,16 @@
         <arg name="map_frame"  value="map"/>
     </include>
 
-    <arg name="lookahead_distance" default="1"/>
+    <arg name="lookahead_distance" default="1.2"/>
     <arg name="steering_gain" default="0.5"/>
-    <arg name="max_speed"  default="4"/>
-    <arg name="min_speed"  default="1.5"/>
-    <arg name="velocity_gain"  default="1"/>
+    <arg name="max_speed"  default="5"/>
+    <arg name="min_speed"  default="1.75"/>
+    <arg name="velocity_gain"  default="1.25"/>
     <arg name="basic_velocity"  default="False"/>
     <!-- Visualization parameters -->
     <arg name="visualization" default="False"/>
     <arg name="log_output_length" default="100"/>
-    <arg name="log_output" default="True"/>
+    <arg name="log_output" default="False"/>
     <arg name="queue_length" default="100"/>
     <node name="pure_pursuit" pkg="pure_pursuit" type="pure_pursuit.py" output="screen">
         <param name="lookahead_distance" value="$(arg lookahead_distance)"/>
@@ -33,13 +33,22 @@
         <param name="log_output" value="$(arg log_output)"/>
     </node>
 
+    <arg name="wall_distance"  default="0.6"/>
+    <arg name="waypoint_distance"  default="0.1"/>
+    <arg name="start_line_step"  default="4"/>
     <arg name="use_gradient_descent"  default="True"/>
-    <arg name="wall_distance"  default="0.4"/>
-    <arg name="waypoint_distance"  default="0.3"/>
+    <arg name="gradient_step_size"  default="7"/>
+    <arg name="gradient_weight_past"  default="0.35"/>
+    <arg name="gradient_weight_future"  default="0.15"/>
+
     <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
-         <param name="use_gradient_descent"  value="$(arg use_gradient_descent)"/>
          <param name="wall_distance"  value="$(arg wall_distance)"/>
          <param name="waypoint_distance"  value="$(arg waypoint_distance)"/>
+         <param name="start_line_step"  value="$(arg start_line_step)"/>
          <param name="map_name"  value="$(arg map)"/>
+         <param name="use_gradient_descent"  value="$(arg use_gradient_descent)"/>
+         <param name="gradient_step_size"  value="$(arg gradient_step_size)"/>
+         <param name="gradient_weight_past"  value="$(arg gradient_weight_past)"/>
+         <param name="gradient_weight_future"  value="$(arg gradient_weight_future)"/>
     </node>
 </launch>
