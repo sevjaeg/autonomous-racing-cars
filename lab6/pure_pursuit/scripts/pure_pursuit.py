@@ -83,7 +83,7 @@ class pure_pursuit:
 
     # Calculate the velocity based on the distance in front of the car
     def lidar_callback(self, data):
-        velocity = data.ranges[540] * VELOCITY_GAIN
+        velocity = data.ranges[int(len(data.ranges) / 2)] * VELOCITY_GAIN
         if velocity > MAX_SPEED:
             velocity = MAX_SPEED
         if velocity < MIN_SPEED:
