@@ -2,11 +2,12 @@
 
 <launch>
     <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
-    <arg name="map"  default="bunch_of_sticks"/>
+    <arg name="map"  default="infhs_slam_2"/>
+    <arg name="bag_name"  default="$(find pure_pursuit)/maps/$(arg map)_path"/>
 
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
         <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
-        <arg name="map_frame"  value="map"/>
+        <arg name="map_frame"  value="odom"/>
     </include>
 
     <arg name="lookahead_distance" default="1.2"/>
@@ -31,24 +32,6 @@
         <param name="queue_length" value="$(arg queue_length)"/>
         <param name="log_output_length" value="$(arg log_output_length)"/>
         <param name="log_output" value="$(arg log_output)"/>
-    </node>
-
-    <arg name="wall_distance"  default="0.6"/>
-    <arg name="waypoint_distance"  default="0.1"/>
-    <arg name="start_line_step"  default="4"/>
-    <arg name="use_gradient_descent"  default="True"/>
-    <arg name="gradient_step_size"  default="7"/>
-    <arg name="gradient_weight_past"  default="0.35"/>
-    <arg name="gradient_weight_future"  default="0.15"/>
-
-    <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
-         <param name="wall_distance"  value="$(arg wall_distance)"/>
-         <param name="waypoint_distance"  value="$(arg waypoint_distance)"/>
-         <param name="start_line_step"  value="$(arg start_line_step)"/>
-         <param name="map_name"  value="$(arg map)"/>
-         <param name="use_gradient_descent"  value="$(arg use_gradient_descent)"/>
-         <param name="gradient_step_size"  value="$(arg gradient_step_size)"/>
-         <param name="gradient_weight_past"  value="$(arg gradient_weight_past)"/>
-         <param name="gradient_weight_future"  value="$(arg gradient_weight_future)"/>
+        <param name="bag_name" value="$(arg bag_name)"/>
     </node>
 </launch>

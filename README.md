@@ -181,21 +181,19 @@ roslaunch wall_follow fusion.launch
 
 ### Planner
 
+Requires scikit-image version 0.16.x or newer (tested with 0.19.2)
+
 ```
 pip install scikit-image
 ```
 
-Launch rviz first
+Calculate a path with
 
 ```
-roslaunch pure_pursuit rviz.launch
+roslaunch pure_pursuit plan_path.launch
 ```
 
-Then launch the simulator with the planner
-
-```
-roslaunch pure_pursuit simulator.launch
-```
+Make sure to configure a SLAM map as such in the launch file as the image format is slighly different. The computed path is written to a bag file which is automatically read by pure pursuit.
 
 ## Using HW data
 
@@ -217,3 +215,12 @@ roslaunch filter_fusion_hw.launch
 ## Run timer
 
 Run `roslaunch timer timer.launch`. Be sure to discard the first lap time.
+
+## Image Processing
+
+- Generate map with Cartographer SLAM
+- `convert map.pgm -fuzz 33% -fill black -opaque gray map.pgm` to make hard walls
+- `convert map.pgm map.png` for easier visualisation (optional)
+- Manually refine image with GIMP (if required)
+- Update launch file (if required)
+- Generate path

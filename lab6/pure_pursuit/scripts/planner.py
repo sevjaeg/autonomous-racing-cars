@@ -8,6 +8,7 @@ import tf
 
 #ROS Imports
 import rospy
+import rosbag
 import geometry_msgs
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped
@@ -19,39 +20,41 @@ from skimage import io, morphology, img_as_ubyte, __version__
 # avoid problems with python2
 MAX_FLOAT = 99999.9
 
-
 class planner:
     def __init__(self):
         rospy.loginfo("Hello from planner node!")
         rospy.loginfo("scikit-image version " + __version__)
 
         # Topics & Subscriptions, Publishers
-        map_topic = '/map'
-        path_topic = '/path'
+        self.map_topic = '/map'
+        self.path_topic = '/path'
 
-        self.map_sub = rospy.Subscriber(map_topic, OccupancyGrid, self.map_callback, queue_size=1)
-        self.path_pub = rospy.Publisher(path_topic, Path, queue_size=10, latch=True)
+        self.map_sub = rospy.Subscriber(self.map_topic, OccupancyGrid, self.map_callback, queue_size=1)
+        self.path_pub = rospy.Publisher(self.path_topic, Path, queue_size=10, latch=True)
 
         # Parameters
-        self.OCCUPIED_THRESHOLD = 0.65  # map pixels are considered occupied if larger than this value
-        self.SAFETY_DISTANCE = rospy.get_param('/planner/wall_distance', 0.6)  # safety foam radius (m)
-        self.WAYPOINT_DISTANCE = rospy.get_param('/planner/waypoint_distance', 0.1)  # distance between waypoints (m)
+        self.IS_SLAM_MAP = rospy.get_param('/planner/is_slam_map', "False")  # image created with cartographer?
         self.MAP_NAME = rospy.get_param('/planner/map_name', "")  # name for the exported map
-        self.START_LINE_STEP = rospy.get_param('/planner/start_line_step', 4)  # in pixels
-
-        self.STEP_SIZE = rospy.get_param('/planner/gradient_step_size', 5 * np.sqrt(2)) 
-        self.WEIGHT_PAST = rospy.get_param('/planner/gradient_weight_past', 0.35) 
-        self.WEIGHT_FUTURE = rospy.get_param('/planner/gradient_weight_future', 0.15) 
-        self.MAX_REASONABLE_ANGLE = math.radians(50)
-
-        # False: basic approach as in assignment sheet
-        # True:  gradient descent based path calculation with larger step size
-        self.USE_GRADIENT_DESCENT = rospy.get_param('/planner/use_gradient_descent', True)
+        self.BAG_NAME = rospy.get_param('/planner/bag_name', "")  # name for the exported rosbag
         
         # Path for saving maps
         self.savepath = os.path.dirname(os.path.realpath(__file__)) + "/../maps"
         if not os.path.exists(self.savepath):
             os.makedirs(self.savepath)
+
+        self.OCCUPIED_THRESHOLD = 0.65  # map pixels are considered occupied if larger than this value
+        self.SAFETY_DISTANCE = rospy.get_param('/planner/wall_distance', 0.6)  # safety foam radius (m)
+        self.WAYPOINT_DISTANCE = rospy.get_param('/planner/waypoint_distance', 0.1)  # distance between waypoints (m)
+        self.START_LINE_STEP = rospy.get_param('/planner/start_line_step', 4)  # in pixels     
+
+        self.STEP_SIZE = rospy.get_param('/planner/gradient_step_size', 5 * np.sqrt(2)) 
+        self.WEIGHT_PAST = rospy.get_param('/planner/gradient_weight_past', 0.35) 
+        self.WEIGHT_FUTURE = rospy.get_param('/planner/gradient_weight_future', 0.15) 
+        self.MAX_REASONABLE_ANGLE = math.radians(50.0)
+
+        # False: basic approach as in assignment sheet
+        # True:  gradient descent based path calculation with larger step size
+        self.USE_GRADIENT_DESCENT = rospy.get_param('/planner/use_gradient_descent', True)
 
     def map_callback(self, data):
         """
@@ -59,19 +62,27 @@ class planner:
         """
         rospy.loginfo("map info from OccupancyGrid message:\n%s", data.info)
         
-        self.shape = (data.info.width, data.info.height)
-        self.start_position = (data.info.origin.position.x,
-                               data.info.origin.position.y)
         self.resolution = data.info.resolution
+        if self.IS_SLAM_MAP:
+            self.shape = (data.info.height, data.info.width)
+            self.start_position = (data.info.origin.position.y,
+                                data.info.origin.position.x)
+        else:
+            self.shape = (data.info.width, data.info.height)
+            self.start_position = (data.info.origin.position.x,
+                                data.info.origin.position.y)
+
         self.start_pixel = (int(-self.start_position[0]/self.resolution),
                             int(-self.start_position[1]/self.resolution))
+
+        print(self.start_pixel)
 
         # in pixels
         self.WAYPOINT_DISTANCE = rospy.get_param('/planner/waypoint_distance', 0.8)/self.resolution
         
         map = self.preprocess_map(data)
-    
-        driveable_area = self.get_driveable_area(data, map)
+
+        driveable_area = self.get_driveable_area(map)
         self.save_map(driveable_area, "1_drivable_area")
 
         driveable_area = self.add_safety_foam(driveable_area)
@@ -109,6 +120,13 @@ class planner:
         self.path_pub.publish(self.path_msg)
         self.save_map(self.path, "4_path")
 
+        try:
+            bag = rosbag.Bag(self.BAG_NAME + '.bag', 'w')
+            bag.write(self.path_topic, self.path_msg)
+            rospy.loginfo("Bag file written to " + self.BAG_NAME + '.bag')
+        finally:
+            bag.close()
+
     def get_distances(self, driveable_area, start_x):
         distances = np.full(self.shape, MAX_FLOAT, dtype=float)
         done_map = (~(driveable_area)).copy()
@@ -139,12 +157,16 @@ class planner:
         return distances
 
     def preprocess_map(self, data):
-        map_data = np.asarray(data.data).reshape((data.info.width, data.info.height)) # parse map data into 2D numpy array
+        if self.IS_SLAM_MAP:
+            map_data = np.asarray(data.data).reshape((data.info.height, data.info.width)) # parse map data into 2D numpy array
+        else:
+            map_data = np.asarray(data.data).reshape((data.info.width, data.info.height)) # parse map data into 2D numpy array
+
         map_normalized = map_data / np.amax(map_data.flatten()) # normalize map
         map_binary = map_normalized < (self.OCCUPIED_THRESHOLD) # make binary occupancy map
         return map_binary
 
-    def get_driveable_area(self, data, map_binary):
+    def get_driveable_area(self, map_binary):
         driveable_area = morphology.flood_fill(
             image = 1*map_binary,
             seed_point = self.start_pixel,
@@ -190,12 +212,10 @@ class planner:
         path_length = 1.0 * START_OFFSET
         path = map.copy()
 
+        steering_effort = 0.0
+
         best_x = -1
         best_y = -1
-
-        # TODO
-        # curvature =  np.full(self.shape, MAX_FLOAT, dtype=float)
-        # no curvature initially
 
         path[x,y] = 0.0
         # Fist step: only steps up (or sideways) as first gradient points towards line
@@ -207,6 +227,8 @@ class planner:
                 best_x = new_x
                 best_y = new_y
 
+        # TODO steering effort
+
         if best_x == -1 and best_y == -1:
             rospy.logerr("No valid path found from this starting position. Consider increasing START_OFFSET.")
             exit(-1)
@@ -216,6 +238,7 @@ class planner:
         x = best_x
         y = best_y
         last_waypoint = np.array([x, y])
+        last_wp_orientation = 0.0
 
         # Not broadcasting a position at the start reduces problems with a non-central start
         # self.add_pose_to_path(path_msg, x, y, last_x=last_x, last_y=last_y)
@@ -251,24 +274,35 @@ class planner:
             # self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "5_orientation")
             dir = orientation[x, y]
 
-            while(distance > self.STEP_SIZE-1):
+            while(distance > self.STEP_SIZE-1.0):
                 path[x,y] = 0.0
                 path_point = np.array([x, y])
                 
                 if np.linalg.norm(path_point - last_waypoint) >= self.WAYPOINT_DISTANCE:
-                    self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
+                    wp_orientation = np.arctan2(last_waypoint[0]-path_point[0], last_waypoint[1]-path_point[1]) + np.pi
+                    self.add_pose_to_path(path_msg, x, y, orientation=wp_orientation)
                     path_length += np.linalg.norm(path_point - last_waypoint)
+                
+                    steering_effort += (np.abs(wp_orientation-last_wp_orientation)/np.linalg.norm(path_point - last_waypoint))
+
                     last_waypoint = path_point
+                    last_wp_orientation = wp_orientation
+
 
                 # TODO implement curve radius function
-                # LOOKAHEAD_DISTANCE = 5
-                # DISTANCE_WEIGHT = 0.7
-                # CURVATURE_WEIGHT = 1-DISTANCE_WEIGHT
+                LOOKAHEAD_DISTANCE = 5
+                DISTANCE_WEIGHT = 0.7
+                CURVATURE_WEIGHT = 1-DISTANCE_WEIGHT
 
                 # get_reasonable_steps: return legal pixels (given position, step size, angular range, init dir)
                 # get_reasonable_steps((x, y), STEP_SIZE, np.pi, last_direction)
 
-                # last_direction = dir
+                # 
+                # x_scan = x
+                # y_scan = y
+                # while np.linalg.norm(path_point - np.array([x, y])) < LOOKAHEAD_DISTANCE:
+
+                
 
                 if np.abs(dir - orientation[x, y]) < self.MAX_REASONABLE_ANGLE and \
                    np.abs(orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5),
@@ -276,7 +310,8 @@ class planner:
                          ) < self.MAX_REASONABLE_ANGLE:
                     dir = self.WEIGHT_PAST * dir + \
                           (1-self.WEIGHT_PAST - self.WEIGHT_FUTURE) * orientation[x, y] + \
-                          self.WEIGHT_FUTURE * orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + self.STEP_SIZE * np.cos(orientation[x,y])+0.5)]
+                          self.WEIGHT_FUTURE * orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + self.STEP_SIZE * np.cos(orientation[x,y])+0.5)] \
+                          # + np.random.normal(loc=0.0, scale=0.5)
                     next_step = self.STEP_SIZE
                 else:
                     dir = orientation[x, y]
@@ -303,14 +338,20 @@ class planner:
             # add final waypoint (to have a fair distance comparison)
             self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])
             path_length += np.linalg.norm(path_point - last_waypoint)
+
+            rospy.loginfo("Steering: " + str(steering_effort))
         return path, path_msg, path_length
 
     def add_pose_to_path(self, path_msg, x, y, last_x=-1, last_y=-1, orientation=0.0):
         pose_msg = PoseStamped()
         pose_msg.header.frame_id = "map"
         pose_msg.header.stamp = rospy.get_rostime() 
-        pose_msg.pose.position.x = self.resolution*y + self.start_position[0]
-        pose_msg.pose.position.y = self.resolution*x + self.start_position[1]
+        if self.IS_SLAM_MAP:
+            pose_msg.pose.position.x = self.resolution*y + self.start_position[1]
+            pose_msg.pose.position.y = self.resolution*x + self.start_position[0]
+        else:
+            pose_msg.pose.position.x = self.resolution*y + self.start_position[0]
+            pose_msg.pose.position.y = self.resolution*x + self.start_position[1]
         pose_msg.pose.position.z = 0.0
 
         if last_x == -1 and last_y == -1:

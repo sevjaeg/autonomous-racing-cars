@@ -2,10 +2,10 @@
 from __future__ import print_function
 import sys
 import math
-import numpy as np
 
 #ROS Imports
 import rospy
+import rosbag
 import math
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
@@ -18,8 +18,6 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 import tf2_ros
 import tf2_geometry_msgs
-
-from skimage import io, morphology, img_as_ubyte
 
 # Parameters of Pure Pursuit
 LOOKAHEAD_DISTANCE = rospy.get_param('/pure_pursuit/lookahead_distance', 1.2)
@@ -63,9 +61,17 @@ class pure_pursuit:
         self.marker_goal_pub = rospy.Publisher(marker_goal_topic, Marker, queue_size=1)
         self.trajectory_pub = rospy.Publisher(trajectory_topic, Marker, queue_size=1)
 
+        self.path_pub = rospy.Publisher(path_topic, Path, queue_size=10, latch=True)
+
         self.tf_buffer = tf2_ros.Buffer()
         listener = tf2_ros.TransformListener(self.tf_buffer)
+        
+        bag_path = rospy.get_param('/pure_pursuit/bag_name', "") + ".bag"
+        bag = rosbag.Bag(bag_path)
+        rospy.loginfo("Read bag file from " + bag_path)
 
+        for topic, msg, t in bag.read_messages(topics=[path_topic]):
+            self.path_pub.publish(msg)
 
     def odom_callback(self, data):
         if self.log_counter % int(LOG_OUTPUT_LENGTH) == 0:
