@@ -213,3 +213,7 @@ Running AMCL and sensor fusion including visualisation
 cd lab4
 roslaunch filter_fusion_hw.launch
 ```
+
+## Run timer
+
+Run `roslaunch timer timer.launch`. Be sure to discard the first lap time.
