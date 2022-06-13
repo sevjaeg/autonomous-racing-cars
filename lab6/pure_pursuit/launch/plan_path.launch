@@ -5,14 +5,14 @@
 
 <launch>
     <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test / infhs_slam_2-->
-    <arg name="map"  default="infhs_slam_2"/>
-    <arg name="is_slam_map"  default="True"/>
+    <arg name="map"  default="f1_aut_wide"/>
+    <arg name="is_slam_map"  default="False"/>
     <arg name="bag_name"  default="$(find pure_pursuit)/maps/$(arg map)_path"/>
 
     <!-- Map server-->
     <node pkg="map_server" name="map_server" type="map_server" args="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
 
-    <arg name="wall_distance"  default="0.3"/>
+    <arg name="wall_distance"  default="0.5"/>
     <arg name="waypoint_distance"  default="0.1"/>
     <arg name="start_line_step"  default="3"/>
     <arg name="use_gradient_descent"  default="True"/>

@@ -186,7 +186,7 @@ class planner:
             map_data = np.asarray(data.data).reshape((data.info.width, data.info.height)) # parse map data into 2D numpy array
 
         map_normalized = map_data / np.amax(map_data.flatten()) # normalize map
-        map_binary = map_normalized < (self.OCCUPIED_THRESHOLD) # make binary occupancy map
+        map_binary = map_normalized < 0.65  # make binary occupancy map
         return map_binary
 
     def get_driveable_area(self, map_binary):
