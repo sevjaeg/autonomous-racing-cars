@@ -2,6 +2,7 @@
 from __future__ import print_function
 import sys
 import math
+from traceback import print_tb
 import numpy as np
 import os
 import tf
@@ -45,12 +46,13 @@ class planner:
         self.OCCUPIED_THRESHOLD = 0.65  # map pixels are considered occupied if larger than this value
         self.SAFETY_DISTANCE = rospy.get_param('/planner/wall_distance', 0.6)  # safety foam radius (m)
         self.WAYPOINT_DISTANCE = rospy.get_param('/planner/waypoint_distance', 0.1)  # distance between waypoints (m)
-        self.START_LINE_STEP = rospy.get_param('/planner/start_line_step', 4)  # in pixels     
+        self.START_LINE_STEP = rospy.get_param('/planner/start_line_step', 4)  # in pixels   
 
         self.STEP_SIZE = rospy.get_param('/planner/gradient_step_size', 5 * np.sqrt(2)) 
         self.WEIGHT_PAST = rospy.get_param('/planner/gradient_weight_past', 0.35) 
-        self.WEIGHT_FUTURE = rospy.get_param('/planner/gradient_weight_future', 0.15) 
-        self.MAX_REASONABLE_ANGLE = math.radians(50.0)
+        self.WEIGHT_FUTURE = rospy.get_param('/planner/gradient_weight_future', 0.15)
+        self.CLEARANCE_WEIGHT = rospy.get_param('/planner/clearance_weight', 0.33) 
+        self.MAX_REASONABLE_ANGLE = math.radians(60.0)
 
         # False: basic approach as in assignment sheet
         # True:  gradient descent based path calculation with larger step size
@@ -83,10 +85,13 @@ class planner:
         map = self.preprocess_map(data)
 
         driveable_area = self.get_driveable_area(map)
-        self.save_map(driveable_area, "1_drivable_area")
+        # self.save_map(driveable_area, "1_drivable_area")
 
         driveable_area = self.add_safety_foam(driveable_area)
-        self.save_map(driveable_area, "2_drivable_area_safety")
+        # self.save_map(driveable_area, "2_drivable_area_safety")
+
+        clearances = self.get_clearances(driveable_area)
+        # self.save_map(clearances/np.max(clearances), "3_clearances")
 
         shortest_lap = MAX_FLOAT
 
@@ -98,8 +103,8 @@ class planner:
             path_msg.header.stamp = rospy.get_rostime() 
 
             distances = self.get_distances(driveable_area, start_x)
-
-            path, path_msg, lap_length = self.calculate_path(map, distances, path_msg, start_x=start_x)
+        
+            path, path_msg, lap_length = self.calculate_path(map, distances, clearances, path_msg, start_x=start_x)
 
             # lap_length = distances[start_x, self.start_pixel[1] + 2]
             rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
@@ -115,10 +120,10 @@ class planner:
 
         distances_print = self.distances.copy()
         distances_print[driveable_area == False] = 0.0  # remove high values outside driveable area
-        self.save_map(distances_print/np.max(distances_print), "3_distances")
+        # self.save_map(distances_print/np.max(distances_print), "4_distances")
 
         self.path_pub.publish(self.path_msg)
-        self.save_map(self.path, "4_path")
+        self.save_map(self.path, "path")
 
         try:
             bag = rosbag.Bag(self.BAG_NAME + '.bag', 'w')
@@ -155,6 +160,24 @@ class planner:
                     done_map[new_x, new_y] = True
                     queue.append((new_x, new_y))
         return distances
+
+    def get_clearances(self, driveable_area):
+        OFFSET = 0.01  # prevents division by 0
+        clearances = np.zeros(self.shape, dtype=float)
+
+        indices = np.argwhere(driveable_area)
+
+        # find track edge
+        binary_image = morphology.binary_erosion(driveable_area)
+        indices_out = np.argwhere(driveable_area!=binary_image) 
+
+        for index in indices:
+            clearances[index[0], index[1]] = np.min(np.linalg.norm(indices_out - index, axis=1))
+
+        clearances = clearances + OFFSET
+        clearances = 1/clearances
+
+        return clearances
 
     def preprocess_map(self, data):
         if self.IS_SLAM_MAP:
@@ -200,7 +223,7 @@ class planner:
                     y_min = y+step_y
         return min_dist, x_min, y_min
 
-    def calculate_path(self, map, distances, path_msg, start_x):
+    def calculate_path(self, map, distances, clearances, path_msg, start_x):
         # Start a little above the starting line as the line has distance 0
         # The pixels just above have distance 1 due to an imperfect distance calculation
         START_OFFSET = 2
@@ -268,12 +291,14 @@ class planner:
             path_length += np.linalg.norm(path_point - last_waypoint)
 
         else:  # USE_GRADIENT_DESCENT
-            g_x, g_y = np.gradient(distances)
+            field = (1-self.CLEARANCE_WEIGHT)*distances + self.CLEARANCE_WEIGHT * clearances
+            g_x, g_y = np.gradient(field)
             orientation = np.arctan2(g_x, g_y)+np.pi
 
-            # self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "5_orientation")
+            # self.save_map((orientation+np.pi)/(np.max(orientation)* 2 * np.pi), "6_orientation")
             dir = orientation[x, y]
 
+            i = 0
             while(distance > self.STEP_SIZE-1.0):
                 path[x,y] = 0.0
                 path_point = np.array([x, y])
@@ -287,22 +312,7 @@ class planner:
 
                     last_waypoint = path_point
                     last_wp_orientation = wp_orientation
-
-
-                # TODO implement curve radius function
-                LOOKAHEAD_DISTANCE = 5
-                DISTANCE_WEIGHT = 0.7
-                CURVATURE_WEIGHT = 1-DISTANCE_WEIGHT
-
-                # get_reasonable_steps: return legal pixels (given position, step size, angular range, init dir)
-                # get_reasonable_steps((x, y), STEP_SIZE, np.pi, last_direction)
-
-                # 
-                # x_scan = x
-                # y_scan = y
-                # while np.linalg.norm(path_point - np.array([x, y])) < LOOKAHEAD_DISTANCE:
-
-                
+               
 
                 if np.abs(dir - orientation[x, y]) < self.MAX_REASONABLE_ANGLE and \
                    np.abs(orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5),
@@ -310,30 +320,33 @@ class planner:
                          ) < self.MAX_REASONABLE_ANGLE:
                     dir = self.WEIGHT_PAST * dir + \
                           (1-self.WEIGHT_PAST - self.WEIGHT_FUTURE) * orientation[x, y] + \
-                          self.WEIGHT_FUTURE * orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + self.STEP_SIZE * np.cos(orientation[x,y])+0.5)] \
-                          # + np.random.normal(loc=0.0, scale=0.5)
+                          self.WEIGHT_FUTURE * orientation[int(x + self.STEP_SIZE * np.sin(orientation[x,y])+0.5), int(y + self.STEP_SIZE * np.cos(orientation[x,y])+0.5)]
                     next_step = self.STEP_SIZE
+
+                    new_x = int(x + next_step * np.sin(dir)+0.5)
+                    new_y = int(y + next_step * np.cos(dir)+0.5)
+
+                    j = 1
+                    while distances[new_x, new_y] == MAX_FLOAT:
+                        new_x = int(x + (next_step-j*np.sqrt(2)) * np.sin(dir)+0.5)
+                        new_y = int(y + (next_step-j*np.sqrt(2)) * np.cos(dir)+0.5)
+                        j = j + 1
+                        if (next_step-j*np.sqrt(2)) <= 0 or (next_step-j*np.sqrt(2)) <= 0:
+                            break
                 else:
                     dir = orientation[x, y]
                     next_step = np.sqrt(2)
 
-                new_x = int(x + next_step * np.sin(dir)+0.5)
-                new_y = int(y + next_step * np.cos(dir)+0.5)
-
-                # keep path in drivable area
-                j = 1
-                while distances[new_x, new_y] == MAX_FLOAT:
-                    new_x = int(x + (next_step-j*np.sqrt(2)) * np.sin(dir)+0.5)
-                    new_y = int(y + (next_step-j*np.sqrt(2)) * np.cos(dir)+0.5)
-                    j = j + 1
-                    if (next_step-j*np.sqrt(2)) <= 0 or (next_step-j*np.sqrt(2)) <= 0:
-                        break
-
                 last_x = x
                 last_y = y
-                x = new_x
-                y = new_y
+                x = int(x + next_step * np.sin(dir)+0.5)
+                y = int(y + next_step * np.cos(dir)+0.5)
                 distance = distances[x, y]
+
+                i = i+1
+                if i > 50000:
+                    rospy.logerr("No path terminating at the start found. Consider reducing CLEARANCE_WEIGHT.")
+                    exit(-1)
 
             # add final waypoint (to have a fair distance comparison)
             self.add_pose_to_path(path_msg, x, y, orientation=orientation[x, y])

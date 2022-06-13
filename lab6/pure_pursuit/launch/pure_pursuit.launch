@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 
 <launch>
-    <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test -->
+    <!-- bunch_of_sticks / f1_aut_wide / f1_aut_wide_obstacles / f1_aut / f1_mco / f1_gbr / f1_esp / test / infhs_slam_2-->
     <arg name="map"  default="infhs_slam_2"/>
     <arg name="bag_name"  default="$(find pure_pursuit)/maps/$(arg map)_path"/>
 
     <include file="$(find f1tenth_simulator)/launch/simulator.launch">
         <arg name="map" value="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
-        <arg name="map_frame"  value="odom"/>
+        <arg name="map_frame"  value="map"/>
     </include>
 
     <arg name="lookahead_distance" default="1.2"/>
@@ -34,4 +34,7 @@
         <param name="log_output" value="$(arg log_output)"/>
         <param name="bag_name" value="$(arg bag_name)"/>
     </node>
+
+    <include file="$(find timer)/launch/timer.launch">
+    </include>
 </launch>

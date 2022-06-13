@@ -12,13 +12,14 @@
     <!-- Map server-->
     <node pkg="map_server" name="map_server" type="map_server" args="$(find f1tenth_simulator)/maps/$(arg map).yaml"/>
 
-    <arg name="wall_distance"  default="0.4"/>
+    <arg name="wall_distance"  default="0.3"/>
     <arg name="waypoint_distance"  default="0.1"/>
-    <arg name="start_line_step"  default="4"/>
+    <arg name="start_line_step"  default="3"/>
     <arg name="use_gradient_descent"  default="True"/>
-    <arg name="gradient_step_size"  default="7"/>
-    <arg name="gradient_weight_past"  default="0.35"/>
-    <arg name="gradient_weight_future"  default="0.15"/>
+    <arg name="gradient_step_size"  default="5"/>
+    <arg name="gradient_weight_past"  default="0.3"/>
+    <arg name="gradient_weight_future"  default="0.1"/>
+    <arg name="clearance_weight"  default="0.25"/>
 
     <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
          <param name="wall_distance"  value="$(arg wall_distance)"/>
@@ -31,5 +32,6 @@
          <param name="gradient_weight_past"  value="$(arg gradient_weight_past)"/>
          <param name="gradient_weight_future"  value="$(arg gradient_weight_future)"/>
          <param name="is_slam_map"  value="$(arg is_slam_map)"/>
+         <param name="clearance_weight"  value="$(arg clearance_weight)"/>
     </node>
 </launch>
