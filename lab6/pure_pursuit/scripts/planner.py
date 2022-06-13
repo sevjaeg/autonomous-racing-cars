@@ -20,6 +20,7 @@ from skimage import io, morphology, img_as_ubyte, __version__
 
 # avoid problems with python2
 MAX_FLOAT = 99999.9
+DEBUG = False
 
 class planner:
     def __init__(self):
@@ -53,6 +54,7 @@ class planner:
         self.WEIGHT_FUTURE = rospy.get_param('/planner/gradient_weight_future', 0.15)
         self.CLEARANCE_WEIGHT = rospy.get_param('/planner/clearance_weight', 0.33) 
         self.MAX_REASONABLE_ANGLE = math.radians(60.0)
+        self.MIN_LAP_LENGTH = 20.0
 
         # False: basic approach as in assignment sheet
         # True:  gradient descent based path calculation with larger step size
@@ -85,13 +87,16 @@ class planner:
         map = self.preprocess_map(data)
 
         driveable_area = self.get_driveable_area(map)
-        # self.save_map(driveable_area, "1_drivable_area")
+        if DEBUG:
+            self.save_map(driveable_area, "1_drivable_area")
 
         driveable_area = self.add_safety_foam(driveable_area)
-        # self.save_map(driveable_area, "2_drivable_area_safety")
+        if DEBUG:
+            self.save_map(driveable_area, "2_drivable_area_safety")
 
         clearances = self.get_clearances(driveable_area)
-        # self.save_map(clearances/np.max(clearances), "3_clearances")
+        if DEBUG:
+            self.save_map(clearances/np.max(clearances), "3_clearances")
 
         shortest_lap = MAX_FLOAT
 
@@ -108,7 +113,7 @@ class planner:
 
             # lap_length = distances[start_x, self.start_pixel[1] + 2]
             rospy.loginfo("Start @" + str(start_x) + ": track length " + str(lap_length))
-            if lap_length <= shortest_lap:
+            if lap_length <= shortest_lap and lap_length > self.MIN_LAP_LENGTH:
                 shortest_lap = lap_length
                 self.start_x = start_x
                 self.distances = distances
@@ -120,7 +125,8 @@ class planner:
 
         distances_print = self.distances.copy()
         distances_print[driveable_area == False] = 0.0  # remove high values outside driveable area
-        # self.save_map(distances_print/np.max(distances_print), "4_distances")
+        if DEBUG:
+            self.save_map(distances_print/np.max(distances_print), "4_distances")
 
         self.path_pub.publish(self.path_msg)
         self.save_map(self.path, "path")
@@ -174,7 +180,7 @@ class planner:
         for index in indices:
             clearances[index[0], index[1]] = np.min(np.linalg.norm(indices_out - index, axis=1))
 
-        clearances = clearances + OFFSET
+        clearances = clearances**2 + OFFSET
         clearances = 1/clearances
 
         return clearances
