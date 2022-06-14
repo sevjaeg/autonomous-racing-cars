@@ -19,7 +19,7 @@
     <arg name="gradient_step_size"  default="6"/>
     <arg name="gradient_weight_past"  default="0.35"/>
     <arg name="gradient_weight_future"  default="0.15"/>
-    <arg name="clearance_weight"  default="0.5"/>
+    <arg name="clearance_weight"  default="0.9"/>
 
     <node name="planner" pkg="pure_pursuit" type="planner.py" output="screen">
          <param name="wall_distance"  value="$(arg wall_distance)"/>
