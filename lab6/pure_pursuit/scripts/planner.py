@@ -18,21 +18,13 @@ from nav_msgs.msg import Path
 # scikit-image for image operations
 from skimage import io, morphology, img_as_ubyte, __version__
 
-# avoid problems with python2
-MAX_FLOAT = 99999.9
+MAX_FLOAT = 99999.9  # avoid problems with python2
 DEBUG = False
 
 class planner:
     def __init__(self):
         rospy.loginfo("Hello from planner node!")
         rospy.loginfo("scikit-image version " + __version__)
-
-        # Topics & Subscriptions, Publishers
-        self.map_topic = '/map'
-        self.path_topic = '/path'
-
-        self.map_sub = rospy.Subscriber(self.map_topic, OccupancyGrid, self.map_callback, queue_size=1)
-        self.path_pub = rospy.Publisher(self.path_topic, Path, queue_size=10, latch=True)
 
         # Parameters
         self.IS_SLAM_MAP = rospy.get_param('/planner/is_slam_map', "False")  # image created with cartographer?
@@ -59,6 +51,13 @@ class planner:
         # False: basic approach as in assignment sheet
         # True:  gradient descent based path calculation with larger step size
         self.USE_GRADIENT_DESCENT = rospy.get_param('/planner/use_gradient_descent', True)
+        
+         # Topics & Subscriptions, Publishers
+        self.map_topic = '/map'
+        self.path_topic = '/path'
+
+        self.map_sub = rospy.Subscriber(self.map_topic, OccupancyGrid, self.map_callback, queue_size=1)
+        self.path_pub = rospy.Publisher(self.path_topic, Path, queue_size=10, latch=True)
 
     def map_callback(self, data):
         """
@@ -259,7 +258,7 @@ class planner:
         # TODO steering effort
 
         if best_x == -1 and best_y == -1:
-            rospy.logerr("No valid path found from this starting position. Consider increasing START_OFFSET.")
+            rospy.logerr("No valid path found from this starting position. Make sure the SAFETY_DISTANCE does not block the track and consider increasing START_OFFSET.")
             exit(-1)
         
         last_x = x
@@ -267,7 +266,7 @@ class planner:
         x = best_x
         y = best_y
         last_waypoint = np.array([x, y])
-        last_wp_orientation = 0.0
+        last_wp_orientation = np.arctan2(last_x-x, last_y-y) + np.pi
 
         # Not broadcasting a position at the start reduces problems with a non-central start
         # self.add_pose_to_path(path_msg, x, y, last_x=last_x, last_y=last_y)
@@ -313,8 +312,11 @@ class planner:
                     wp_orientation = np.arctan2(last_waypoint[0]-path_point[0], last_waypoint[1]-path_point[1]) + np.pi
                     self.add_pose_to_path(path_msg, x, y, orientation=wp_orientation)
                     path_length += np.linalg.norm(path_point - last_waypoint)
-                
-                    steering_effort += (np.abs(wp_orientation-last_wp_orientation)/np.linalg.norm(path_point - last_waypoint))
+
+                    ang = np.abs(wp_orientation-last_wp_orientation)
+                    if ang > np.pi:
+                        ang = ang - 2*np.pi
+                    steering_effort += (ang/np.linalg.norm(path_point - last_waypoint))
 
                     last_waypoint = path_point
                     last_wp_orientation = wp_orientation
