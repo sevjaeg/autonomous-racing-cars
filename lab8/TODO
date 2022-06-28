@@ -1,8 +1,7 @@
 Disparity extender tweaks
- - Consider curves from map/plan for dynamic safety dist
- - Solve follow the gap traps by right/left preference (possibly dependent on location)
- - Later braking
- - Steering gain only if slow
- - Consider disparity stretch
-
+ [ ] Consider curves from map/plan for dynamic safety dist
+ [ ] Solve follow the gap traps by right/left preference (possibly dependent on location)
+ [x] Later braking
+ [x] Steering gain only if slow
+ [ ] Mitigate oscillations due to changing safety radii (maybe some time averaging, or looking behind safety radius)
 
