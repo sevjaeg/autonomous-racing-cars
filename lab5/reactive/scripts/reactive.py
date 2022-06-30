@@ -176,7 +176,7 @@ class DisparityExtender:
         
         velocity = np.clip(velocity, MIN_SPEED, MAX_SPEED)
 
-        # TODO replace with controller?
+        # TODO uses velocity from odometry here
         # reduces oscillations when going at higher speeds
         if velocity > V_CRIT:
             angle = MIN_STEERING_GAIN * angle
