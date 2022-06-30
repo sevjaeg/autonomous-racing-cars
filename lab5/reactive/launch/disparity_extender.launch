@@ -14,23 +14,23 @@
 
      <!-- Disparity extender params -->
     <arg name="disparity"  default="0.25"/>
-    <arg name="safety_distance"  default="0.35"/>
-    <arg name="lidar_angular_range"  default="150"/>
+    <arg name="safety_distance"  default="0.3"/>
+    <arg name="lidar_angular_range"  default="160"/>
     
     <!-- Steering angle calculation -->
-    <arg name="min_steering_gain"  default="0.33"/>
-    <arg name="max_steering_gain"  default="0.8"/>
+    <arg name="min_steering_gain"  default="0.5"/>
+    <arg name="max_steering_gain"  default="0.7"/>
     
      <!-- Velocity calculation -->
     <arg name="max_speed"  default="4.5"/>
     <arg name="min_speed"  default="2"/>
-    <arg name="brake_before_crash_gain"  default="1.0"/>
-    <arg name="brake_to_steer_gain"  default="0.75"/>
-    <arg name="brake_for_strech_end_gain"  default="0.6"/>
+    <arg name="brake_before_crash_gain"  default="0.2"/>
+    <arg name="brake_to_steer_gain"  default="0.35"/>
+    <arg name="brake_for_strech_end_gain"  default="0.0"/>
 
      <!-- old linear mapping with gain -->
     <arg name="linear_velocity"  default="false"/>
-    <arg name="velocity_gain"  default="1.3"/>
+    <arg name="velocity_gain"  default="1.6"/>
 
     <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
         <param name="visualization" value="$(arg visualization)"/>

@@ -33,7 +33,7 @@ BRAKE_TO_STEER_GAIN = rospy.get_param('/reactive/brake_to_steer_gain', 0.8)
 BRAKE_BEFORE_CRASH_GAIN = rospy.get_param('/reactive/brake_before_crash_gain', 1.0)
 
 # Up to this velocity, the steering gain decreases linearly (from MAX_STEERING_GAIN to MIN_STEERING_GAIN). Fixed as no critical parameter
-V_CRIT = (0.4*MAX_SPEED + 0.6*MIN_SPEED) - MIN_SPEED
+V_CRIT = (0.6*MAX_SPEED + 0.4*MIN_SPEED) - MIN_SPEED
 MIN_STEERING_GAIN = rospy.get_param('/reactive/min_steering_gain', 0.5)
 MAX_STEERING_GAIN = rospy.get_param('/reactive/max_steering_gain', 0.8)
 
@@ -145,7 +145,7 @@ class DisparityExtender:
 
     def navigate_farthest(self, ranges):
         ranges_list = list(ranges)
-        straight = np.min(ranges_list[int(len(ranges_list)/2)-10:int(len(ranges_list)/2)+10])
+        straight = np.median(ranges_list[int(len(ranges_list)/2)-2:int(len(ranges_list)/2)+2])
         farthest = ranges_list.index(max(ranges_list))
 
         if straight < MIN_DISTANCE_TO_TURN:
@@ -158,24 +158,25 @@ class DisparityExtender:
         else:
             
        
-            if farthest > 5.0:
+            if farthest > 6.0:
                 dist_func = 0
             else:
                 # TODO consider time behaviour, e.g. only use this if declining
-                dist_func = np.clip(1/(farthest + 0.001), 0, 1)
+                dist_func = 1/(farthest + 0.001)
 
-            if straight > 1.5:
+            if straight > 3.5:
                 crash_func = 0
             else:
-                crash_func = np.clip(1/(straight**2 + 0.001), 0, 1)
+                crash_func = 1/(straight**2 + 0.001)
             
             if angle <= 6:  # do not brake for small angles
                 angle_func = 0
             else:
-                angle_func = np.clip(angle**2, 0, MAX_STEERING_ANGLE**2)/MAX_STEERING_ANGLE**2
+                angle_func = np.clip(angle**1.5, 0, MAX_STEERING_ANGLE**1.5)/MAX_STEERING_ANGLE**1.5
             # print(dist_func, " ", angle_func, " ", crash_func)
-            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)*(BRAKE_FOR_STRETCH_END_GAIN*dist_func+ BRAKE_TO_STEER_GAIN*angle_func + BRAKE_BEFORE_CRASH_GAIN*crash_func)
-            velocity = np.clip(velocity, MIN_SPEED, MAX_SPEED)
+            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)*np.clip(BRAKE_FOR_STRETCH_END_GAIN*dist_func+ BRAKE_TO_STEER_GAIN*angle_func + BRAKE_BEFORE_CRASH_GAIN*crash_func, 0.0, 1.0)
+        
+        velocity = np.clip(velocity, MIN_SPEED, MAX_SPEED)
 
         # TODO replace with controller?
         # reduces oscillations when going at higher speeds
