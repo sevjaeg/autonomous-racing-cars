@@ -156,13 +156,11 @@ class DisparityExtender:
         if BASIC_VELOCITY:
             velocity = straight * VELOCITY_GAIN
         else:
-            
-       
-            if farthest > 6.0:
+            if ranges[farthest] > 6.0:
                 dist_func = 0
             else:
                 # TODO consider time behaviour, e.g. only use this if declining
-                dist_func = 1/(farthest + 0.001)
+                dist_func = 1/(ranges[farthest] + 0.001)
 
             if straight > 3.5:
                 crash_func = 0
