@@ -7,23 +7,44 @@
     <remap from="/joy" to="/vesc/joy"/>
     <include file="$(find racecar)/launch/teleop.launch"/>
 
-    <arg name="disparity"  default="0.15"/>
-    <arg name="safety_distance"  default="0.52"/>
-    <arg name="dynamic_safety_distance"  default="False"/>
-    <arg name="max_speed"  default="4"/>
-    <arg name="min_speed"  default="1"/>
-    <arg name="velocity_gain"  default="1.5"/>
-    <arg name="steering_gain"  default="0.3"/>
-    <arg name="lidar_range"  default="120"/>
+
+    <!-- Debugging. Set to false on HW -->
+    <arg name="visualization" default="false"/>
+
+     <!-- Disparity extender params -->
+    <arg name="disparity"  default="0.25"/>
+    <arg name="safety_distance"  default="0.35"/>
+    <arg name="lidar_angular_range"  default="150"/>
+    
+    <!-- Steering angle calculation -->
+    <arg name="min_steering_gain"  default="0.4"/>
+    <arg name="max_steering_gain"  default="0.9"/>
+    
+     <!-- Velocity calculation -->
+    <arg name="max_speed"  default="4.3"/>
+    <arg name="min_speed"  default="1.5"/>
+    <arg name="brake_before_crash_gain"  default="0.25"/>
+    <arg name="brake_to_steer_gain"  default="0.35"/>
+    <arg name="brake_for_strech_end_gain"  default="0.35"/>
+
+     <!-- old linear mapping with gain -->
+    <arg name="linear_velocity"  default="false"/>
+    <arg name="velocity_gain"  default="1.6"/>
+
     <node name="reactive" pkg="reactive" type="reactive.py" output="screen">
+        <param name="visualization" value="$(arg visualization)"/>
         <param name="max_speed"  value="$(arg max_speed)"/>
         <param name="min_speed"  value="$(arg min_speed)"/>
+        <param name="brake_before_crash_gain"  value="$(arg brake_before_crash_gain)"/>
+        <param name="brake_to_steer_gain"  value="$(arg brake_to_steer_gain)"/>
+        <param name="brake_for_strech_end_gain"  value="$(arg brake_for_strech_end_gain)"/>
         <param name="velocity_gain"  value="$(arg velocity_gain)"/>
-        <param name="steering_gain"  value="$(arg steering_gain)"/>
+        <param name="min_steering_gain"  value="$(arg min_steering_gain)"/>
+        <param name="max_steering_gain"  value="$(arg max_steering_gain)"/>
         <param name="disparity"  value="$(arg disparity)"/>
         <param name="safety_distance"  value="$(arg safety_distance)"/>
-        <param name="dynamic_safety_distance"  value="$(arg dynamic_safety_distance)"/>
-        <param name="lidar_range"  value="$(arg lidar_range)"/>
+        <param name="lidar_angular_range"  value="$(arg lidar_angular_range)"/>
+        <param name="linear_velocity" value="$(arg linear_velocity)"/>
     </node>
     <!--node name="safety_node" pkg="safety_node1" type="safety_node" output="screen" /-->
 </launch>

@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 from __future__ import print_function
-from curses import raw
 from re import T
 import sys
 import math
+import numpy as np
 
 #ROS Imports
 import rospy
@@ -15,22 +15,37 @@ from geometry_msgs.msg import PoseStamped
 
 # DISPARITY EXTENDER PARAMS
 VISUALIZATION = rospy.get_param('/reactive/visualization', False)  # quite costly in performance, this leads to problems in the test bench
-BASIC_VELOCITY = False  # simple velocity scheme from the assignment sheet, otherwise more aggressive behaviour
-MAX_SPEED = rospy.get_param('/reactive/max_speed', 3)  # m/s  (only without basic velocity)
-MIN_SPEED = rospy.get_param('/reactive/min_speed', 1.2)  # m/s  (only without basic velocity)
-VELOCITY_GAIN = rospy.get_param('/reactive/velocity_gain', 0.6)
-STEERING_GAIN = rospy.get_param('/reactive/steering_gain', 0.8)
+
 # The minimum distance that is considered a disparity
 DISPARITY = rospy.get_param('/reactive/disparity', 0.2)  # m
 # Safety distance to maintain from a disparity
 SAFETY_DISTANCE = rospy.get_param('/reactive/safety_distance', 0.42)  # m
 LIDAR_ANGULAR_RANGE = rospy.get_param('/reactive/lidar_angular_range', 160)   # degrees
-LIDAR_RANGE = rospy.get_param('/reactive/lidar_range', 10) # m
 
+BASIC_VELOCITY = rospy.get_param('/reactive/linear_velocity', False)  # simple velocity scheme with linear gain
+VELOCITY_GAIN = rospy.get_param('/reactive/velocity_gain', 0.6)
+
+MAX_SPEED = rospy.get_param('/reactive/max_speed', 3)  # m/s  (only without basic velocity)
+MIN_SPEED = rospy.get_param('/reactive/min_speed', 1.2)  # m/s  (only without basic velocity)
+
+BRAKE_FOR_STRETCH_END_GAIN = rospy.get_param('/reactive/brake_for_strech_end_gain', 0.6)
+BRAKE_TO_STEER_GAIN = rospy.get_param('/reactive/brake_to_steer_gain', 0.8)
+BRAKE_BEFORE_CRASH_GAIN = rospy.get_param('/reactive/brake_before_crash_gain', 1.0)
+
+# Up to this velocity, the steering gain decreases linearly (from MAX_STEERING_GAIN to MIN_STEERING_GAIN). Fixed as no critical parameter
+V_CRIT = (0.6*MAX_SPEED + 0.4*MIN_SPEED) - MIN_SPEED
+MIN_STEERING_GAIN = rospy.get_param('/reactive/min_steering_gain', 0.5)
+MAX_STEERING_GAIN = rospy.get_param('/reactive/max_steering_gain', 0.8)
+
+# Lidar params (fixed)
+LIDAR_MIN_DIST = 0.06  # m
+LIDAR_RANGE = 10  # m
+
+# TODO
 DYNAMIC_SAFETY_DIST = rospy.get_param('/reactive/dynamic_safety_distance', False)
 
 # When the distance in front is less than this, the car turns (so far unused)
-MIN_DISTANCE_TO_TURN = 1000
+MIN_DISTANCE_TO_TURN = 99999
 
 # CONSTANTS
 RAYS_PER_DEGREE = 4
@@ -67,32 +82,30 @@ class DisparityExtender:
             viz_arr = list(data.intensities)
             self.scan = data
             data.ranges = self.set_ranges()
+        
         filtered_ranges = self.filter_ranges(data)
         processed_ranges = self.process_disparities(filtered_ranges)
         self.navigate_farthest(processed_ranges)
+        
 
     # Filter the lidar data to obtain only lasers in range (-90, +90)
     def filter_ranges(self, data):
         global viz_arr, lidar_data
+
+        scans = np.array(data.ranges)
+        scans = np.clip(scans, LIDAR_MIN_DIST , LIDAR_RANGE)
         lidar_data = data
-
-        i = 0
-        while i < (len(data.ranges) - 1):
-            if data.ranges[i] > LIDAR_RANGE:
-                data.ranges[i] = LIDAR_RANGE
-            i +=1
-
-        lasers = int(len(data.ranges) * LIDAR_ANGULAR_RANGE / 270)
-        self.skipped = int((len(data.ranges) - lasers) / 2)
-        filtered = data.ranges[self.skipped: self.skipped + lasers]
+        lasers = int(len(scans) * LIDAR_ANGULAR_RANGE / 270)
+        self.skipped = int((len(scans) - lasers) / 2)
+        filtered = scans[self.skipped: self.skipped + lasers]
         if VISUALIZATION:
             viz_arr[0: self.skipped] = [0] * self.skipped
-            viz_arr[self.skipped + lasers:] = [0] * self.skipped
+            viz_arr[self.skipped + lasers:] = [0] * self.skipped 
         return filtered
 
     def process_disparities(self, ranges):
         global viz_arr
-        processed_ranges = list(ranges)
+        processed_ranges = ranges.copy()
         i = 0
         while i < (len(ranges) - 1):
             if abs(ranges[i] - ranges[i + 1]) >= DISPARITY:
@@ -128,45 +141,53 @@ class DisparityExtender:
     def calculate_angle(self, distance):
         # Calculated as 1080/270
         angle = math.degrees(math.atan(SAFETY_DISTANCE / distance))
-        
         return angle * RAYS_PER_DEGREE
 
     def navigate_farthest(self, ranges):
         ranges_list = list(ranges)
-        straight = ranges_list[int(len(ranges_list)/2)]
+        straight = np.median(ranges_list[int(len(ranges_list)/2)-2:int(len(ranges_list)/2)+2])
         farthest = ranges_list.index(max(ranges_list))
 
-        print("straight ", straight, " farthest ", ranges_list[farthest])
-
-        # TODO
         if straight < MIN_DISTANCE_TO_TURN:
             angle = self.get_angle(ranges, farthest)
         else:
             angle = 0.0
 
         if BASIC_VELOCITY:
-            velocity = 1
+            velocity = straight * VELOCITY_GAIN
         else:
-            velocity = farthest * VELOCITY_GAIN
-            print(velocity)
-            if velocity > MAX_SPEED:
-                velocity = MAX_SPEED
-            if velocity < MIN_SPEED:
-                velocity = MIN_SPEED
+            if ranges[farthest] > 6.0:
+                dist_func = 0
+            else:
+                # TODO consider time behaviour, e.g. only use this if declining
+                dist_func = 1/(ranges[farthest] + 0.001)
 
+            if straight > 3.5:
+                crash_func = 0
+            else:
+                crash_func = 1/(straight**2 + 0.001)
+            
+            if angle <= 6:  # do not brake for small angles
+                angle_func = 0
+            else:
+                angle_func = np.clip(angle**1.5, 0, MAX_STEERING_ANGLE**1.5)/MAX_STEERING_ANGLE**1.5
+            # print(dist_func, " ", angle_func, " ", crash_func)
+            velocity = MAX_SPEED - (MAX_SPEED-MIN_SPEED)*np.clip(BRAKE_FOR_STRETCH_END_GAIN*dist_func+ BRAKE_TO_STEER_GAIN*angle_func + BRAKE_BEFORE_CRASH_GAIN*crash_func, 0.0, 1.0)
+        
+        velocity = np.clip(velocity, MIN_SPEED, MAX_SPEED)
+
+        # TODO uses velocity from odometry here
         # reduces oscillations when going at higher speeds
-        #if velocity > 4:
-        angle = STEERING_GAIN * angle
-        #elif velocity > 2.0:
-        #    angle = STEERING_GAIN * 0.5 * angle
-        
-        # Angle clipping. Probably handled by VESC anyway, but improves plot readablity
-        if(angle > MAX_STEERING_ANGLE):
-            angle = MAX_STEERING_ANGLE
-        elif (angle < -MAX_STEERING_ANGLE):
-            angle = -MAX_STEERING_ANGLE
+        if velocity > V_CRIT:
+            angle = MIN_STEERING_GAIN * angle
+        else:
+            angle = (MIN_STEERING_GAIN + (1-(velocity-MIN_SPEED)/V_CRIT) * (MAX_STEERING_GAIN-MIN_STEERING_GAIN)) * angle
 
-        
+        # Keep angle in [-180, 180]
+        angle = ((angle + 180) % 360) - 180
+
+        # Angle clipping. Probably handled by VESC anyway, but improves plot readablity
+        angle = np.clip(angle, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE)
 
         drive_msg = AckermannDriveStamped()
         drive_msg.header.stamp = rospy.Time.now()
@@ -186,8 +207,6 @@ class DisparityExtender:
 
     def get_angle(self, ranges, i):
         return (1.0 * i / len(ranges)) * LIDAR_ANGULAR_RANGE - (LIDAR_ANGULAR_RANGE / 2)
-        # Funnily enough it works with the code below
-        # return (1.0 * i / len(ranges)) * 180 - 90
 
     def set_intensities(self, farthest):
         global viz_arr, lidar_data
